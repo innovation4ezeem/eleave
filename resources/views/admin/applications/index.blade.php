@@ -10,11 +10,15 @@
     <form method="GET" action="{{ route('admin.applications.index') }}" class="card card-body mb-3">
         <div class="row g-2 align-items-end">
             <div class="col-md-2">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="Employee name, email, no.">
+            </div>
+            <div class="col-md-2">
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select form-select-sm">
                     <option value="">All</option>
-                    @foreach (['pending', 'approved', 'rejected', 'cancelled'] as $value)
-                        <option value="{{ $value }}" {{ $status === $value ? 'selected' : '' }}>{{ ucfirst($value) }}</option>
+                    @foreach (['pending', 'approved', 'rejected', 'cancelled', 'change_requested'] as $value)
+                        <option value="{{ $value }}" {{ $status === $value ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $value)) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -27,6 +31,7 @@
                     @endforeach
                 </select>
             </div>
+            @if (auth()->user()->isAdmin())
             <div class="col-md-2">
                 <label class="form-label">Department</label>
                 <select name="department_id" class="form-select form-select-sm">
@@ -36,6 +41,7 @@
                     @endforeach
                 </select>
             </div>
+            @endif
             <div class="col-md-2">
                 <label class="form-label">Leave Type</label>
                 <select name="leave_type_id" class="form-select form-select-sm">
@@ -78,13 +84,8 @@
                 <tbody>
                     @forelse ($applications as $application)
                         <tr>
-                            <td>{{ $application->user->name }}</td>
-                            <td>
-                                {{ $application->department?->name ?? '—' }}
-                                @if ($application->status === 'pending' && $application->department && $application->department->approvers->isEmpty())
-                                    <span class="badge bg-warning text-dark" title="No approver configured for this department; any admin may act">No approver set</span>
-                                @endif
-                            </td>
+                            <td>{{ $application->user?->name ?? '(Deleted)' }}</td>
+                            <td>{{ $application->department?->name ?? '—' }}</td>
                             <td>{{ $application->leaveType->name }}</td>
                             <td>
                                 {{ $application->start_date->format('d M Y') }}

@@ -6,25 +6,36 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreDepartmentRequest;
 use App\Http\Requests\Admin\UpdateDepartmentRequest;
 use App\Models\Department;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DepartmentController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $departments = Department::withCount(['users', 'approvers'])->orderBy('name')->get();
+        $query = Department::withCount('users');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->input('status') === 'active');
+        }
+
+        $departments = $query->orderBy('name')->get();
 
         return view('admin.departments.index', compact('departments'));
     }
 
     public function create(): View
     {
-        $admins = User::where('role', 'admin')->orderBy('name')->get();
-
-        return view('admin.departments.create', compact('admins'));
+        return view('admin.departments.create');
     }
 
     public function store(StoreDepartmentRequest $request): RedirectResponse
@@ -32,18 +43,14 @@ class DepartmentController extends Controller
         $data = $request->validated();
         $data['is_active'] = $request->boolean('is_active');
 
-        $department = Department::create(Arr::except($data, ['approver_ids']));
-        $department->approvers()->sync($data['approver_ids'] ?? []);
+        Department::create($data);
 
         return redirect()->route('admin.departments.index')->with('success', 'Department created.');
     }
 
     public function edit(Department $department): View
     {
-        $admins = User::where('role', 'admin')->orderBy('name')->get();
-        $department->load('approvers');
-
-        return view('admin.departments.edit', compact('department', 'admins'));
+        return view('admin.departments.edit', compact('department'));
     }
 
     public function update(UpdateDepartmentRequest $request, Department $department): RedirectResponse
@@ -51,8 +58,7 @@ class DepartmentController extends Controller
         $data = $request->validated();
         $data['is_active'] = $request->boolean('is_active');
 
-        $department->update(Arr::except($data, ['approver_ids']));
-        $department->approvers()->sync($data['approver_ids'] ?? []);
+        $department->update($data);
 
         return redirect()->route('admin.departments.index')->with('success', 'Department updated.');
     }

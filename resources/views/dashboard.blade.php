@@ -41,6 +41,49 @@
                     </a>
                 </div>
             </div>
+        @elseif (auth()->user()->isHod())
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <a href="{{ route('admin.applications.index') }}" class="text-decoration-none">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="h5">Leave Applications</h3>
+                                <p class="text-muted mb-0">Review and approve your department's leave requests.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route('admin.historical.index') }}" class="text-decoration-none">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="h5">Historical Leave</h3>
+                                <p class="text-muted mb-0">View past leave records for your department.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route('leave.create') }}" class="text-decoration-none">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="h5">Apply for Leave</h3>
+                                <p class="text-muted mb-0">Submit a new leave application for yourself.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route('admin.users.index') }}" class="text-decoration-none">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="h5">My Department</h3>
+                                <p class="text-muted mb-0">View and manage employees in your department.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
         @else
             <div class="row g-3">
                 <div class="col-md-3">
@@ -107,7 +150,7 @@
                         <div class="card h-100">
                             <div class="card-body">
                                 <h3 class="h5">Departments</h3>
-                                <p class="text-muted mb-0">Manage departments and approver assignments.</p>
+                                <p class="text-muted mb-0">Manage departments.</p>
                             </div>
                         </div>
                     </a>

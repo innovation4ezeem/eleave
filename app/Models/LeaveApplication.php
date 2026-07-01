@@ -11,7 +11,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'user_id', 'leave_type_id', 'department_id', 'start_date', 'end_date',
     'start_half', 'end_half', 'total_days', 'reason', 'document_path',
-    'document_original_name', 'status', 'applied_at', 'decided_by', 'decided_at',
+    'document_original_name', 'status', 'prev_status', 'change_action',
+    'requested_leave_type_id', 'requested_start_date', 'requested_end_date',
+    'requested_start_half', 'requested_end_half', 'requested_total_days',
+    'applied_at', 'decided_by', 'decided_at',
     'remarks', 'is_historical', 'leave_year',
 ])]
 class LeaveApplication extends Model
@@ -24,6 +27,9 @@ class LeaveApplication extends Model
             'start_date' => 'date',
             'end_date' => 'date',
             'total_days' => 'decimal:1',
+            'requested_start_date' => 'date',
+            'requested_end_date' => 'date',
+            'requested_total_days' => 'decimal:1',
             'applied_at' => 'datetime',
             'decided_at' => 'datetime',
             'is_historical' => 'boolean',
@@ -38,6 +44,11 @@ class LeaveApplication extends Model
     public function leaveType(): BelongsTo
     {
         return $this->belongsTo(LeaveType::class);
+    }
+
+    public function requestedLeaveType(): BelongsTo
+    {
+        return $this->belongsTo(LeaveType::class, 'requested_leave_type_id');
     }
 
     public function department(): BelongsTo
@@ -67,6 +78,7 @@ class LeaveApplication extends Model
             'approved' => 'bg-success',
             'rejected' => 'bg-danger',
             'cancelled' => 'bg-secondary',
+            'change_requested' => 'bg-info text-dark',
             default => 'bg-light text-dark',
         };
     }
@@ -86,11 +98,23 @@ class LeaveApplication extends Model
         return $query->where('department_id', $departmentId);
     }
 
-    public function scopeOverlapping($query, int $userId, $start, $end)
+    public function scopeOverlapping($query, int $userId, $start, $end, ?string $requestHalf = null)
     {
-        return $query->where('user_id', $userId)
+        $query = $query->where('user_id', $userId)
             ->whereIn('status', ['pending', 'approved'])
             ->where('start_date', '<=', $end)
             ->where('end_date', '>=', $start);
+
+        // For single-day AM or PM requests, exclude the complementary half-day on the same date
+        if ($requestHalf !== null && $requestHalf !== 'full' && $start === $end) {
+            $complement = $requestHalf === 'am' ? 'pm' : 'am';
+            $query->where(function ($q) use ($start, $complement) {
+                $q->where('start_date', '!=', $start)
+                    ->orWhere('end_date', '!=', $start)
+                    ->orWhere('start_half', '!=', $complement);
+            });
+        }
+
+        return $query;
     }
 }

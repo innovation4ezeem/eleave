@@ -6,11 +6,6 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveType;
 use App\Models\User;
 
-/**
- * At the start of each leave year (1 Feb), unused Annual Leave from the
- * leave year that just ended becomes that employee's Carry Forward Leave
- * entitlement for the new leave year, capped at 5 days.
- */
 class LeaveYearRolloverService
 {
     public function __construct(private LeaveBalanceService $balanceService)
@@ -20,20 +15,33 @@ class LeaveYearRolloverService
     public function rolloverUser(User $user, int $newLeaveYear): float
     {
         $annualLeaveType = LeaveType::where('code', 'annual')->firstOrFail();
+        $rewardLeaveType = LeaveType::where('code', 'reward')->first();
         $carryForwardType = LeaveType::where('code', 'carry_forward')->firstOrFail();
 
-        $previousBalance = LeaveBalance::where('user_id', $user->id)
-            ->where('leave_type_id', $annualLeaveType->id)
-            ->where('leave_year', $newLeaveYear - 1)
-            ->first();
+        $previousYear = $newLeaveYear - 1;
 
-        $remaining = $previousBalance ? (float) $previousBalance->remaining_days : 0.0;
-        $carryForwardDays = max(0.0, min(5.0, $remaining));
+        $annualRemaining = $this->remainingFor($user, $annualLeaveType->id, $previousYear);
+        $rewardRemaining = $rewardLeaveType
+            ? $this->remainingFor($user, $rewardLeaveType->id, $previousYear)
+            : 0.0;
+
+        // Combine unused Annual + Reward, capped at 5 days total.
+        $carryForwardDays = min(5.0, max(0.0, $annualRemaining) + max(0.0, $rewardRemaining));
 
         $carryForwardBalance = $this->balanceService->getOrCreateBalance($user, $carryForwardType, $newLeaveYear);
         $carryForwardBalance->update(['entitlement_days' => $carryForwardDays]);
 
         return $carryForwardDays;
+    }
+
+    private function remainingFor(User $user, int $leaveTypeId, int $leaveYear): float
+    {
+        $balance = LeaveBalance::where('user_id', $user->id)
+            ->where('leave_type_id', $leaveTypeId)
+            ->where('leave_year', $leaveYear)
+            ->first();
+
+        return $balance ? (float) $balance->remaining_days : 0.0;
     }
 
     /**
@@ -44,7 +52,17 @@ class LeaveYearRolloverService
         $results = [];
 
         foreach (User::where('is_active', true)->get() as $user) {
-            $results[$user->id] = $this->rolloverUser($user, $newLeaveYear);
+            // Compute and set Carry Forward from previous year's unused Annual Leave
+            $carryForwardDays = $this->rolloverUser($user, $newLeaveYear);
+
+            // Provision only the leave types this user is entitled to (idempotent — won't overwrite existing rows)
+            foreach ($user->entitledLeaveTypes()->active()->get() as $leaveType) {
+                if ($leaveType->code !== 'carry_forward') {
+                    $this->balanceService->getOrCreateBalance($user, $leaveType, $newLeaveYear);
+                }
+            }
+
+            $results[$user->id] = $carryForwardDays;
         }
 
         return $results;

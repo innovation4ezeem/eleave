@@ -35,22 +35,6 @@
                     <label for="is_active" class="form-check-label">Active</label>
                 </div>
 
-                <div class="mb-3">
-                    <label for="approver_ids" class="form-label">Approvers</label>
-                    @php
-                        $selectedApprovers = old('approver_ids', $department->approvers->pluck('id')->all());
-                    @endphp
-                    <select id="approver_ids" name="approver_ids[]" class="form-select @error('approver_ids') is-invalid @enderror" multiple size="6">
-                        @foreach ($admins as $admin)
-                            <option value="{{ $admin->id }}" {{ collect($selectedApprovers)->contains($admin->id) ? 'selected' : '' }}>{{ $admin->name }} ({{ $admin->email }})</option>
-                        @endforeach
-                    </select>
-                    <div class="form-text">Admins selected here can approve/reject leave for employees in this department. If none are selected, any admin may act.</div>
-                    @error('approver_ids')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
                 <button type="submit" class="btn btn-primary">Save Changes</button>
             </form>
         </div>

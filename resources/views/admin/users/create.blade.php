@@ -43,6 +43,7 @@
                         <select id="role" name="role" class="form-select @error('role') is-invalid @enderror" required>
                             <option value="">Select role</option>
                             <option value="employee" {{ old('role') === 'employee' ? 'selected' : '' }}>Employee</option>
+                            <option value="hod" {{ old('role') === 'hod' ? 'selected' : '' }}>HOD (Head of Department)</option>
                             <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                         </select>
                         @error('role')
@@ -93,7 +94,28 @@
                     </div>
                 </div>
 
-                <div class="form-text mb-3">Leave balances for all active leave types will be created automatically for this account based on each leave type's default quota.</div>
+                <div class="mb-3">
+                    <label class="form-label">Entitled Leave Types</label>
+                    <div class="row">
+                        @foreach ($leaveTypes as $leaveType)
+                            @php
+                                $checked = old('leave_type_ids') !== null
+                                    ? in_array((string) $leaveType->id, old('leave_type_ids', []))
+                                    : in_array($leaveType->id, $entitledLeaveTypeIds);
+                            @endphp
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="leave_type_ids[]" value="{{ $leaveType->id }}" id="lt_{{ $leaveType->id }}" {{ $checked ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="lt_{{ $leaveType->id }}">{{ $leaveType->name }}</label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="form-text">Only the leave types ticked here will be available to this employee when applying, and only these will get a balance.</div>
+                    @error('leave_type_ids')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
+                </div>
 
                 <button type="submit" class="btn btn-primary">Create User</button>
             </form>

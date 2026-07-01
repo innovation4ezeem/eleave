@@ -9,11 +9,11 @@
 
     <div class="mb-3">
         <div class="btn-group">
-            <a href="{{ route('balances.index', ['leave_year' => $leaveYear - 1]) }}" class="btn btn-outline-secondary btn-sm">&laquo; {{ $leaveYear - 1 }}/{{ $leaveYear }}</a>
-            <span class="btn btn-light btn-sm disabled">{{ $leaveYear }}/{{ $leaveYear + 1 }}</span>
-            <a href="{{ route('balances.index', ['leave_year' => $leaveYear + 1]) }}" class="btn btn-outline-secondary btn-sm">{{ $leaveYear + 1 }}/{{ $leaveYear + 2 }} &raquo;</a>
+            <a href="{{ route('balances.index', ['leave_year' => $leaveYear - 1]) }}" class="btn btn-outline-secondary btn-sm">&laquo; {{ $leaveYear - 1 }}</a>
+            <span class="btn btn-light btn-sm disabled">{{ $leaveYear }}</span>
+            <a href="{{ route('balances.index', ['leave_year' => $leaveYear + 1]) }}" class="btn btn-outline-secondary btn-sm">{{ $leaveYear + 1 }} &raquo;</a>
         </div>
-        <div class="form-text">Leave year runs 1 Feb {{ $leaveYear }} &ndash; 31 Jan {{ $leaveYear + 1 }}.</div>
+        <div class="form-text">Leave year runs 1 Jan {{ $leaveYear }} &ndash; 31 Dec {{ $leaveYear }}.</div>
     </div>
 
     <div class="card">

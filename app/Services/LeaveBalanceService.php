@@ -8,6 +8,10 @@ use App\Models\User;
 
 class LeaveBalanceService
 {
+    public function __construct(private LeaveEntitlementService $entitlementService)
+    {
+    }
+
     public function getOrCreateBalance(User $user, LeaveType $leaveType, int $leaveYear): LeaveBalance
     {
         return LeaveBalance::firstOrCreate(
@@ -17,7 +21,7 @@ class LeaveBalanceService
                 'leave_year' => $leaveYear,
             ],
             [
-                'entitlement_days' => $leaveType->default_annual_quota,
+                'entitlement_days' => $this->entitlementService->entitlementFor($user, $leaveType, $leaveYear),
                 'used_days' => 0,
                 'adjustment_days' => 0,
             ],

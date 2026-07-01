@@ -10,12 +10,19 @@
 
     <div class="mb-3">
         <div class="btn-group">
-            <a href="{{ route('admin.users.balances.edit', ['user' => $user, 'leave_year' => $leaveYear - 1]) }}" class="btn btn-outline-secondary btn-sm">&laquo; {{ $leaveYear - 1 }}/{{ $leaveYear }}</a>
-            <span class="btn btn-light btn-sm disabled">{{ $leaveYear }}/{{ $leaveYear + 1 }}</span>
-            <a href="{{ route('admin.users.balances.edit', ['user' => $user, 'leave_year' => $leaveYear + 1]) }}" class="btn btn-outline-secondary btn-sm">{{ $leaveYear + 1 }}/{{ $leaveYear + 2 }} &raquo;</a>
+            <a href="{{ route('admin.users.balances.edit', ['user' => $user, 'leave_year' => $leaveYear - 1]) }}" class="btn btn-outline-secondary btn-sm">&laquo; {{ $leaveYear - 1 }}</a>
+            <span class="btn btn-light btn-sm disabled">{{ $leaveYear }}</span>
+            <a href="{{ route('admin.users.balances.edit', ['user' => $user, 'leave_year' => $leaveYear + 1]) }}" class="btn btn-outline-secondary btn-sm">{{ $leaveYear + 1 }} &raquo;</a>
         </div>
-        <div class="form-text">Leave year runs 1 Feb {{ $leaveYear }} &ndash; 31 Jan {{ $leaveYear + 1 }}.</div>
+        <div class="form-text">Leave year runs 1 Jan {{ $leaveYear }} &ndash; 31 Dec {{ $leaveYear }}.</div>
     </div>
+
+    @if ($locked)
+        <div class="alert alert-secondary">
+            <strong>This leave year is locked (archived).</strong> Balances are read-only.
+            Unlock it under <a href="{{ route('admin.leave-years.index') }}">Leave Years</a> to make changes.
+        </div>
+    @endif
 
     <div class="row">
         <div class="col-lg-8">
@@ -45,13 +52,13 @@
                                                 <input type="hidden" name="balances[{{ $index }}][id]" value="{{ $balance->id }}">
                                             </td>
                                             <td>
-                                                <input type="number" step="0.5" min="0" name="balances[{{ $index }}][entitlement_days]" value="{{ old("balances.$index.entitlement_days", $balance->entitlement_days) }}" class="form-control form-control-sm balance-input" data-row="{{ $index }}">
+                                                <input type="number" step="0.5" min="0" name="balances[{{ $index }}][entitlement_days]" value="{{ old("balances.$index.entitlement_days", $balance->entitlement_days) }}" class="form-control form-control-sm balance-input" data-row="{{ $index }}" {{ $locked ? 'disabled' : '' }}>
                                             </td>
                                             <td>
-                                                <input type="number" step="0.5" name="balances[{{ $index }}][adjustment_days]" value="{{ old("balances.$index.adjustment_days", $balance->adjustment_days) }}" class="form-control form-control-sm balance-input" data-row="{{ $index }}">
+                                                <input type="number" step="0.5" name="balances[{{ $index }}][adjustment_days]" value="{{ old("balances.$index.adjustment_days", $balance->adjustment_days) }}" class="form-control form-control-sm balance-input" data-row="{{ $index }}" {{ $locked ? 'disabled' : '' }}>
                                             </td>
                                             <td>
-                                                <input type="number" step="0.5" min="0" name="balances[{{ $index }}][used_days]" value="{{ old("balances.$index.used_days", $balance->used_days) }}" class="form-control form-control-sm balance-input" data-row="{{ $index }}">
+                                                <input type="number" step="0.5" min="0" name="balances[{{ $index }}][used_days]" value="{{ old("balances.$index.used_days", $balance->used_days) }}" class="form-control form-control-sm balance-input" data-row="{{ $index }}" {{ $locked ? 'disabled' : '' }}>
                                             </td>
                                             <td class="text-end">
                                                 <strong><span id="remaining-{{ $index }}">{{ $balance->remaining_days }}</span></strong>
@@ -64,14 +71,16 @@
 
                         <div class="mb-3">
                             <label for="reason" class="form-label">Reason for changes (optional)</label>
-                            <textarea id="reason" name="reason" rows="2" class="form-control @error('reason') is-invalid @enderror">{{ old('reason') }}</textarea>
+                            <textarea id="reason" name="reason" rows="2" class="form-control @error('reason') is-invalid @enderror" {{ $locked ? 'disabled' : '' }}>{{ old('reason') }}</textarea>
                             <div class="form-text">Recorded in the audit trail for any fields that change.</div>
                             @error('reason')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Save Balances</button>
+                        @unless ($locked)
+                            <button type="submit" class="btn btn-primary">Save Balances</button>
+                        @endunless
                     </form>
                 </div>
             </div>

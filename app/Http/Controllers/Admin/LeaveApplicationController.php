@@ -19,11 +19,25 @@ class LeaveApplicationController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = LeaveApplication::query()->with(['user', 'leaveType', 'department.approvers']);
+        $query = LeaveApplication::query()->with(['user' => fn ($q) => $q->withTrashed(), 'leaveType', 'department']);
 
-        $status = $request->query('status', 'pending');
+        // HOD only sees their own department's applications
+        if (auth()->user()->isHod()) {
+            $query->where('department_id', auth()->user()->department_id);
+        }
+
+        $status = $request->query('status', '');
         if ($status !== '') {
             $query->where('status', $status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('employee_no', 'like', "%{$search}%");
+            });
         }
 
         if ($request->filled('user_id')) {
@@ -48,8 +62,12 @@ class LeaveApplicationController extends Controller
 
         $applications = $query->orderByDesc('applied_at')->paginate(20)->withQueryString();
 
-        $employees = User::orderBy('name')->get(['id', 'name']);
-        $departments = Department::orderBy('name')->get(['id', 'name']);
+        $employees = auth()->user()->isHod()
+            ? User::where('department_id', auth()->user()->department_id)->orderBy('name')->get(['id', 'name'])
+            : User::orderBy('name')->get(['id', 'name']);
+        $departments = auth()->user()->isAdmin()
+            ? Department::orderBy('name')->get(['id', 'name'])
+            : collect();
         $leaveTypes = LeaveType::orderBy('name')->get(['id', 'name']);
 
         return view('admin.applications.index', compact('applications', 'employees', 'departments', 'leaveTypes', 'status'));
@@ -59,7 +77,7 @@ class LeaveApplicationController extends Controller
     {
         $this->authorize('view', $leaveApplication);
 
-        $leaveApplication->load(['user', 'leaveType', 'department.approvers', 'decidedBy', 'logs.actor']);
+        $leaveApplication->load(['user', 'leaveType', 'requestedLeaveType', 'department', 'decidedBy', 'logs.actor']);
 
         return view('admin.applications.show', compact('leaveApplication'));
     }
@@ -80,6 +98,24 @@ class LeaveApplicationController extends Controller
         $service->reject($leaveApplication, $request->user(), $request->validated('remarks'));
 
         return redirect()->route('admin.applications.index')->with('success', 'Leave application rejected.');
+    }
+
+    public function approveChange(LeaveApplication $leaveApplication, LeaveApplicationApprovalService $service): RedirectResponse
+    {
+        $this->authorize('decideChange', $leaveApplication);
+
+        $service->approveChange($leaveApplication, auth()->user());
+
+        return redirect()->route('admin.applications.index')->with('success', 'Change request approved. The application is pending again and any deducted balance was restored.');
+    }
+
+    public function rejectChange(ApproveRejectRequest $request, LeaveApplication $leaveApplication, LeaveApplicationApprovalService $service): RedirectResponse
+    {
+        $this->authorize('decideChange', $leaveApplication);
+
+        $service->rejectChange($leaveApplication, auth()->user(), $request->validated('remarks'));
+
+        return redirect()->route('admin.applications.index')->with('success', 'Change request rejected. The application was restored to its previous status.');
     }
 
     public function downloadDocument(LeaveApplication $leaveApplication): StreamedResponse

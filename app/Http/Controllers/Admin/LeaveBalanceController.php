@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\UpdateLeaveBalanceRequest;
 use App\Models\LeaveBalance;
 use App\Models\LeaveBalanceAdjustment;
 use App\Models\LeaveType;
+use App\Models\LeaveYearLock;
 use App\Models\User;
 use App\Services\LeaveBalanceService;
 use App\Support\LeaveYear;
@@ -23,15 +24,22 @@ class LeaveBalanceController extends Controller
 
     public function edit(Request $request, User $user): View
     {
+        if (auth()->user()->isHod() && $user->department_id !== auth()->user()->department_id) {
+            abort(403);
+        }
+
         $leaveYear = (int) $request->query('leave_year', LeaveYear::current());
 
-        foreach (LeaveType::active()->orderBy('sort_order')->get() as $leaveType) {
+        $entitledTypeIds = $user->entitledLeaveTypes()->active()->pluck('leave_types.id')->all();
+
+        foreach ($user->entitledLeaveTypes()->active()->orderBy('sort_order')->get() as $leaveType) {
             $this->leaveBalanceService->getOrCreateBalance($user, $leaveType, $leaveYear);
         }
 
         $balances = LeaveBalance::with('leaveType')
             ->where('user_id', $user->id)
             ->where('leave_year', $leaveYear)
+            ->whereIn('leave_type_id', $entitledTypeIds)
             ->get()
             ->sortBy(fn (LeaveBalance $balance) => $balance->leaveType->sort_order)
             ->values();
@@ -42,12 +50,22 @@ class LeaveBalanceController extends Controller
             ->limit(20)
             ->get();
 
-        return view('admin.balances.edit', compact('user', 'balances', 'leaveYear', 'adjustments'));
+        $locked = LeaveYearLock::isLocked($leaveYear);
+
+        return view('admin.balances.edit', compact('user', 'balances', 'leaveYear', 'adjustments', 'locked'));
     }
 
     public function update(UpdateLeaveBalanceRequest $request, User $user): RedirectResponse
     {
+        if (auth()->user()->isHod() && $user->department_id !== auth()->user()->department_id) {
+            abort(403);
+        }
+
         $data = $request->validated();
+
+        if (LeaveYearLock::isLocked((int) $data['leave_year'])) {
+            abort(403, 'This leave year is locked (archived) and cannot be edited.');
+        }
 
         DB::transaction(function () use ($data, $user) {
             foreach ($data['balances'] as $row) {

@@ -5,8 +5,49 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">User Accounts</h1>
-        <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm">Add User</a>
+        @if (auth()->user()->isAdmin())
+            <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm">Add User</a>
+        @endif
     </div>
+
+    <form method="GET" action="{{ route('admin.users.index') }}" class="card card-body mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="Name, email or employee no.">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Department</label>
+                <select name="department_id" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach ($departments as $department)
+                        <option value="{{ $department->id }}" {{ (string) request('department_id') === (string) $department->id ? 'selected' : '' }}>{{ $department->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Role</label>
+                <select name="role" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach (['admin', 'hod', 'employee'] as $value)
+                        <option value="{{ $value }}" {{ request('role') === $value ? 'selected' : '' }}>{{ strtoupper($value) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-2">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+        </div>
+    </form>
 
     <div class="card">
         <div class="table-responsive">
@@ -36,13 +77,16 @@
                                 </span>
                             </td>
                             <td class="text-end">
+                                <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-outline-secondary">View</a>
                                 <a href="{{ route('admin.users.balances.edit', $user) }}" class="btn btn-sm btn-outline-secondary">Balances</a>
                                 <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline" onsubmit="return confirm('Delete this user?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
+                                @if (auth()->user()->isAdmin())
+                                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline" onsubmit="return confirm('Delete this user?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @empty

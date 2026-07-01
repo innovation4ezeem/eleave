@@ -41,10 +41,16 @@
 
                     <div class="col-md-6 mb-3">
                         <label for="role" class="form-label">Role</label>
-                        <select id="role" name="role" class="form-select @error('role') is-invalid @enderror" required>
-                            <option value="employee" {{ old('role', $user->role) === 'employee' ? 'selected' : '' }}>Employee</option>
-                            <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Admin</option>
-                        </select>
+                        @if (auth()->user()->isAdmin())
+                            <select id="role" name="role" class="form-select @error('role') is-invalid @enderror" required>
+                                <option value="employee" {{ old('role', $user->role) === 'employee' ? 'selected' : '' }}>Employee</option>
+                                <option value="hod" {{ old('role', $user->role) === 'hod' ? 'selected' : '' }}>HOD</option>
+                                <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Admin</option>
+                            </select>
+                        @else
+                            <input type="hidden" name="role" value="{{ $user->role }}">
+                            <input type="text" class="form-control" value="{{ strtoupper($user->role) }}" disabled>
+                        @endif
                         @error('role')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -52,12 +58,17 @@
 
                     <div class="col-md-6 mb-3">
                         <label for="department_id" class="form-label">Department</label>
-                        <select id="department_id" name="department_id" class="form-select @error('department_id') is-invalid @enderror">
-                            <option value="">None</option>
-                            @foreach ($departments as $department)
-                                <option value="{{ $department->id }}" {{ (string) old('department_id', $user->department_id) === (string) $department->id ? 'selected' : '' }}>{{ $department->name }}</option>
-                            @endforeach
-                        </select>
+                        @if (auth()->user()->isAdmin())
+                            <select id="department_id" name="department_id" class="form-select @error('department_id') is-invalid @enderror">
+                                <option value="">None</option>
+                                @foreach ($departments as $department)
+                                    <option value="{{ $department->id }}" {{ (string) old('department_id', $user->department_id) === (string) $department->id ? 'selected' : '' }}>{{ $department->name }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <input type="hidden" name="department_id" value="{{ $user->department_id }}">
+                            <input type="text" class="form-control" value="{{ $user->department?->name ?? '—' }}" disabled>
+                        @endif
                         @error('department_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -92,6 +103,31 @@
                         <label for="is_active" class="form-check-label">Active</label>
                     </div>
                 </div>
+
+                @if (auth()->user()->isAdmin())
+                    <div class="mb-3">
+                        <label class="form-label">Entitled Leave Types</label>
+                        <div class="row">
+                            @foreach ($leaveTypes as $leaveType)
+                                @php
+                                    $checked = old('leave_type_ids') !== null
+                                        ? in_array((string) $leaveType->id, old('leave_type_ids', []))
+                                        : in_array($leaveType->id, $entitledLeaveTypeIds);
+                                @endphp
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="leave_type_ids[]" value="{{ $leaveType->id }}" id="lt_{{ $leaveType->id }}" {{ $checked ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="lt_{{ $leaveType->id }}">{{ $leaveType->name }}</label>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="form-text">Only the leave types ticked here will be available to this employee when applying, and only these will get a balance.</div>
+                        @error('leave_type_ids')
+                            <div class="text-danger small">{{ $message }}</div>
+                        @enderror
+                    </div>
+                @endif
 
                 <button type="submit" class="btn btn-primary">Save Changes</button>
             </form>

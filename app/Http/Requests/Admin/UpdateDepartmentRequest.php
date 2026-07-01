@@ -18,8 +18,6 @@ class UpdateDepartmentRequest extends FormRequest
             'name' => ['required', 'string', 'max:255', Rule::unique('departments', 'name')->ignore($this->route('department'))],
             'code' => ['nullable', 'string', 'max:20'],
             'is_active' => ['sometimes', 'boolean'],
-            'approver_ids' => ['array'],
-            'approver_ids.*' => ['integer', 'exists:users,id'],
         ];
     }
 }

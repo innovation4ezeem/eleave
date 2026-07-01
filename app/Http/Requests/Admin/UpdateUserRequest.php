@@ -19,12 +19,14 @@ class UpdateUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'password' => ['nullable', 'string', Password::min(8)],
-            'role' => ['required', 'in:admin,employee'],
+            'role' => ['required', 'in:admin,hod,employee'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'employee_no' => ['nullable', 'string', 'max:50'],
             'designation' => ['nullable', 'string', 'max:100'],
             'joined_at' => ['nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
+            'leave_type_ids' => ['array'],
+            'leave_type_ids.*' => ['integer', 'exists:leave_types,id'],
         ];
     }
 }

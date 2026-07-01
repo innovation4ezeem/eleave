@@ -41,6 +41,16 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function isHod(): bool
+    {
+        return $this->role === 'hod';
+    }
+
+    public function isAdminOrHod(): bool
+    {
+        return $this->isAdmin() || $this->isHod();
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
@@ -61,21 +71,25 @@ class User extends Authenticatable
         return $this->belongsToMany(Department::class, 'department_approvers');
     }
 
+    public function entitledLeaveTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(LeaveType::class, 'leave_type_user');
+    }
+
     public function canApproveFor(?Department $department): bool
     {
-        if (! $this->isAdmin()) {
-            return false;
-        }
-
         if ($department === null) {
+            return $this->isAdmin();
+        }
+
+        if ($this->isAdmin()) {
             return true;
         }
 
-        if ($department->approvers()->where('users.id', $this->id)->exists()) {
-            return true;
+        if ($this->isHod()) {
+            return $this->department_id === $department->id;
         }
 
-        // Fallback: if the department has no configured approvers, any admin can approve.
-        return ! $department->approvers()->exists();
+        return false;
     }
 }

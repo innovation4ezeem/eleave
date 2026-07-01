@@ -12,6 +12,7 @@ class NoOverlappingLeave implements ValidationRule
         private int $userId,
         private ?string $endDate,
         private ?int $ignoreApplicationId = null,
+        private ?string $startHalf = null,
     ) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -20,7 +21,7 @@ class NoOverlappingLeave implements ValidationRule
             return;
         }
 
-        $query = LeaveApplication::overlapping($this->userId, $value, $this->endDate);
+        $query = LeaveApplication::overlapping($this->userId, $value, $this->endDate, $this->startHalf);
 
         if ($this->ignoreApplicationId !== null) {
             $query->where('id', '!=', $this->ignoreApplicationId);

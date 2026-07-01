@@ -17,8 +17,6 @@ class StoreDepartmentRequest extends FormRequest
             'name' => ['required', 'string', 'max:255', 'unique:departments,name'],
             'code' => ['nullable', 'string', 'max:20'],
             'is_active' => ['sometimes', 'boolean'],
-            'approver_ids' => ['array'],
-            'approver_ids.*' => ['integer', 'exists:users,id'],
         ];
     }
 }

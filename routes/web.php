@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\HistoricalLeaveController;
 use App\Http\Controllers\Admin\LeaveApplicationController as AdminLeaveApplicationController;
 use App\Http\Controllers\Admin\LeaveBalanceController as AdminLeaveBalanceController;
+use App\Http\Controllers\Admin\LeaveEntitlementTierController;
+use App\Http\Controllers\Admin\LeaveYearController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
@@ -36,26 +38,53 @@ Route::middleware('auth')->group(function () {
         Route::get('/report', [LeaveReportController::class, 'index'])->name('report');
         Route::get('/{leaveApplication}', [LeaveApplicationController::class, 'show'])->name('show');
         Route::post('/{leaveApplication}/cancel', [LeaveApplicationController::class, 'cancel'])->name('cancel');
+        Route::post('/{leaveApplication}/change-request', [LeaveApplicationController::class, 'requestChange'])->name('change-request');
         Route::get('/{leaveApplication}/document', [LeaveApplicationController::class, 'downloadDocument'])->name('document');
     });
 
     Route::get('/balances', [LeaveBalanceController::class, 'index'])->name('balances.index');
 
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+    // Admin + HOD shared routes
+    Route::middleware('role:admin,hod')->prefix('admin')->name('admin.')->group(function () {
+
+        // Leave applications — controllers scope to HOD's dept automatically
         Route::prefix('applications')->name('applications.')->group(function () {
             Route::get('/', [AdminLeaveApplicationController::class, 'index'])->name('index');
             Route::get('/{leaveApplication}', [AdminLeaveApplicationController::class, 'show'])->name('show');
             Route::post('/{leaveApplication}/approve', [AdminLeaveApplicationController::class, 'approve'])->name('approve');
             Route::post('/{leaveApplication}/reject', [AdminLeaveApplicationController::class, 'reject'])->name('reject');
+            Route::post('/{leaveApplication}/change/approve', [AdminLeaveApplicationController::class, 'approveChange'])->name('change.approve');
+            Route::post('/{leaveApplication}/change/reject', [AdminLeaveApplicationController::class, 'rejectChange'])->name('change.reject');
             Route::get('/{leaveApplication}/document', [AdminLeaveApplicationController::class, 'downloadDocument'])->name('document');
         });
 
-        Route::resource('departments', DepartmentController::class)->except(['show']);
+        // Users — admin-only create/store must come BEFORE the {user} wildcard routes
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+            Route::resource('departments', DepartmentController::class)->except(['show']);
 
-        Route::resource('users', UserController::class)->except(['show']);
+            // Leave entitlement tiers (years-of-service based quotas)
+            Route::get('/entitlement-tiers', [LeaveEntitlementTierController::class, 'index'])->name('entitlement-tiers.index');
+            Route::post('/entitlement-tiers', [LeaveEntitlementTierController::class, 'store'])->name('entitlement-tiers.store');
+            Route::delete('/entitlement-tiers/{entitlementTier}', [LeaveEntitlementTierController::class, 'destroy'])->name('entitlement-tiers.destroy');
+
+            // Leave-year archive / locks
+            Route::get('/leave-years', [LeaveYearController::class, 'index'])->name('leave-years.index');
+            Route::post('/leave-years/{leaveYear}/lock', [LeaveYearController::class, 'lock'])->name('leave-years.lock');
+            Route::post('/leave-years/{leaveYear}/unlock', [LeaveYearController::class, 'unlock'])->name('leave-years.unlock');
+        });
+
+        // Users — HOD can view and edit their dept's users
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::get('/users/{user}/balances', [AdminLeaveBalanceController::class, 'edit'])->name('users.balances.edit');
         Route::put('/users/{user}/balances', [AdminLeaveBalanceController::class, 'update'])->name('users.balances.update');
 
+        // Historical leave — controllers scope to HOD's dept automatically
         Route::prefix('historical')->name('historical.')->group(function () {
             Route::get('/', [HistoricalLeaveController::class, 'index'])->name('index');
             Route::get('/create', [HistoricalLeaveController::class, 'create'])->name('create');

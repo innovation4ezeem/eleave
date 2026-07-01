@@ -11,6 +11,7 @@ use App\Services\LeaveApplicationApprovalService;
 use App\Services\LeaveDayCalculator;
 use App\Support\LeaveYear;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class HistoricalLeaveController extends Controller
@@ -19,19 +20,48 @@ class HistoricalLeaveController extends Controller
     {
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        $records = LeaveApplication::with(['user', 'leaveType'])
-            ->where('is_historical', true)
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $query = LeaveApplication::with(['user' => fn ($q) => $q->withTrashed(), 'leaveType'])->where('is_historical', true);
 
-        return view('admin.historical.index', compact('records'));
+        // HOD only sees their own department's historical records
+        if (auth()->user()->isHod()) {
+            $query->whereHas('user', fn ($q) => $q->withTrashed()->where('department_id', auth()->user()->department_id));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->withTrashed()
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('employee_no', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('leave_type_id')) {
+            $query->where('leave_type_id', $request->input('leave_type_id'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('leave_year')) {
+            $query->where('leave_year', $request->input('leave_year'));
+        }
+
+        $records = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
+
+        $leaveTypes = LeaveType::orderBy('sort_order')->get();
+
+        return view('admin.historical.index', compact('records', 'leaveTypes'));
     }
 
     public function create(): View
     {
-        $employees = User::orderBy('name')->get();
+        $employees = auth()->user()->isHod()
+            ? User::where('department_id', auth()->user()->department_id)->orderBy('name')->get()
+            : User::orderBy('name')->get();
         $leaveTypes = LeaveType::orderBy('sort_order')->get();
 
         return view('admin.historical.create', compact('employees', 'leaveTypes'));
@@ -41,6 +71,10 @@ class HistoricalLeaveController extends Controller
     {
         $data = $request->validated();
         $user = User::findOrFail($data['user_id']);
+
+        if (auth()->user()->isHod() && $user->department_id !== auth()->user()->department_id) {
+            abort(403);
+        }
 
         $calculator = new LeaveDayCalculator();
         $totalDays = $calculator->calculate(

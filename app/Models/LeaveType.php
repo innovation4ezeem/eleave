@@ -29,6 +29,11 @@ class LeaveType extends Model
         return $this->hasMany(LeaveBalance::class);
     }
 
+    public function entitlementTiers(): HasMany
+    {
+        return $this->hasMany(LeaveEntitlementTier::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

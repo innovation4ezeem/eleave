@@ -13,9 +13,12 @@ class LeaveBalanceController extends Controller
     {
         $leaveYear = (int) $request->query('leave_year', LeaveYear::current());
 
+        $entitledTypeIds = $request->user()->entitledLeaveTypes()->active()->pluck('leave_types.id')->all();
+
         $balances = $request->user()->leaveBalances()
             ->with('leaveType')
             ->where('leave_year', $leaveYear)
+            ->whereIn('leave_type_id', $entitledTypeIds)
             ->get()
             ->sortBy(fn ($balance) => $balance->leaveType->sort_order);
 
