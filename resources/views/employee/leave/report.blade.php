@@ -96,7 +96,7 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3 mb-0">Leave Report</h1>
-        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">Print Report</button>
+        <a href="{{ route('leave.report', array_merge(request()->query(), ['print' => 1])) }}" target="_blank" class="btn btn-primary btn-sm">Print Report</a>
     </div>
 
     <div class="print-only mb-4">
@@ -225,6 +225,12 @@
         </div>
     </div>
 
+    @if (! $print && $applications->hasPages())
+        <div class="no-print mb-4">
+            {{ $applications->links() }}
+        </div>
+    @endif
+
     <div class="card">
         <div class="card-header">Summary (Total Days by Status)</div>
         <div class="card-body">
@@ -240,3 +246,13 @@
         </div>
     </div>
 @endsection
+
+@if ($print)
+    @push('scripts')
+        <script>
+            window.addEventListener('load', function () {
+                window.print();
+            });
+        </script>
+    @endpush
+@endif

@@ -22,38 +22,50 @@ class LeaveReportController extends Controller
         $dateFrom = $request->query('date_from') ?: LeaveYear::startDate($currentLeaveYear)->toDateString();
         $dateTo = $request->query('date_to') ?: LeaveYear::endDate($currentLeaveYear)->toDateString();
 
-        $query = LeaveApplication::query()
-            ->with(['user' => fn ($q) => $q->withTrashed(), 'leaveType', 'department', 'decidedBy']);
+        // Base query: role scoping + date-range overlap + filters (no eager loads).
+        $base = LeaveApplication::query();
 
         // Scope by role
         if ($viewer->isAdmin()) {
             // all records
         } elseif ($viewer->isHod()) {
-            $query->where('department_id', $viewer->department_id);
+            $base->where('department_id', $viewer->department_id);
         } else {
-            $query->where('user_id', $viewer->id);
+            $base->where('user_id', $viewer->id);
         }
 
         // Date range (overlap)
-        $query->where('end_date', '>=', $dateFrom)
+        $base->where('end_date', '>=', $dateFrom)
             ->where('start_date', '<=', $dateTo);
 
         if ($request->filled('leave_type_id')) {
-            $query->where('leave_type_id', $request->query('leave_type_id'));
+            $base->where('leave_type_id', $request->query('leave_type_id'));
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+            $base->where('status', $request->query('status'));
         }
 
         if ($isManagerView && $request->filled('user_id')) {
-            $query->where('user_id', $request->query('user_id'));
+            $base->where('user_id', $request->query('user_id'));
         }
 
-        $applications = $query->orderBy('start_date')->get();
+        // Summary totals computed in SQL over the entire filtered set (not just one page).
+        $totalDaysByStatus = (clone $base)
+            ->select('status')
+            ->selectRaw('SUM(total_days) as total_days')
+            ->groupBy('status')
+            ->pluck('total_days', 'status');
 
-        $totalDaysByStatus = $applications->groupBy('status')
-            ->map(fn ($group) => $group->sum('total_days'));
+        // Rows: paginate on screen; load everything only for the dedicated print view.
+        $print = $request->boolean('print');
+        $rows = (clone $base)
+            ->with(['user' => fn ($q) => $q->withTrashed(), 'leaveType', 'department', 'decidedBy'])
+            ->orderBy('start_date');
+
+        $applications = $print
+            ? $rows->get()
+            : $rows->paginate(50)->withQueryString();
 
         $leaveTypes = LeaveType::orderBy('sort_order')->get();
 
@@ -75,6 +87,7 @@ class LeaveReportController extends Controller
             'employees' => $employees,
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
+            'print' => $print,
             'selectedLeaveTypeId' => $request->query('leave_type_id'),
             'selectedStatus' => $request->query('status'),
             'selectedUserId' => $request->query('user_id'),
