@@ -6,12 +6,14 @@ use App\Http\Controllers\Admin\LeaveApplicationController as AdminLeaveApplicati
 use App\Http\Controllers\Admin\LeaveBalanceController as AdminLeaveBalanceController;
 use App\Http\Controllers\Admin\LeaveEntitlementTierController;
 use App\Http\Controllers\Admin\LeaveYearController;
+use App\Http\Controllers\Admin\PenaltyController as AdminPenaltyController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Employee\LeaveApplicationController;
 use App\Http\Controllers\Employee\LeaveBalanceController;
 use App\Http\Controllers\Employee\LeaveReportController;
+use App\Http\Controllers\Employee\PenaltyController as EmployeePenaltyController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +45,10 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/balances', [LeaveBalanceController::class, 'index'])->name('balances.index');
+
+    // Employee-facing penalties (own records)
+    Route::get('/penalties', [EmployeePenaltyController::class, 'index'])->name('penalties.index');
+    Route::get('/penalties/{penalty}/document', [EmployeePenaltyController::class, 'downloadDocument'])->name('penalties.document');
 
     // Admin + HOD shared routes
     Route::middleware('role:admin,hod')->prefix('admin')->name('admin.')->group(function () {
@@ -89,6 +95,19 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [HistoricalLeaveController::class, 'index'])->name('index');
             Route::get('/create', [HistoricalLeaveController::class, 'create'])->name('create');
             Route::post('/', [HistoricalLeaveController::class, 'store'])->name('store');
+        });
+
+        // Penalties & warnings — controllers scope to HOD's dept automatically.
+        // 'create' must come BEFORE the '{penalty}' wildcard routes.
+        Route::prefix('penalties')->name('penalties.')->group(function () {
+            Route::get('/', [AdminPenaltyController::class, 'index'])->name('index');
+            Route::get('/create', [AdminPenaltyController::class, 'create'])->name('create');
+            Route::post('/', [AdminPenaltyController::class, 'store'])->name('store');
+            Route::get('/{penalty}', [AdminPenaltyController::class, 'show'])->name('show');
+            Route::get('/{penalty}/edit', [AdminPenaltyController::class, 'edit'])->name('edit');
+            Route::put('/{penalty}', [AdminPenaltyController::class, 'update'])->name('update');
+            Route::delete('/{penalty}', [AdminPenaltyController::class, 'destroy'])->name('destroy');
+            Route::post('/{penalty}/collect', [AdminPenaltyController::class, 'markCollected'])->name('collect');
         });
     });
 });

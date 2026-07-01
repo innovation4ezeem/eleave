@@ -66,6 +66,11 @@ class User extends Authenticatable
         return $this->hasMany(LeaveBalance::class);
     }
 
+    public function penalties(): HasMany
+    {
+        return $this->hasMany(Penalty::class);
+    }
+
     public function approvedDepartments(): BelongsToMany
     {
         return $this->belongsToMany(Department::class, 'department_approvers');

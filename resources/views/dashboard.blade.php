@@ -130,6 +130,34 @@
         @endif
     </section>
 
+    <section class="mb-4">
+        <h2 class="h5 text-muted mb-3">Discipline</h2>
+        <div class="row g-3">
+            @if (auth()->user()->isAdminOrHod())
+                <div class="col-md-4">
+                    <a href="{{ route('admin.penalties.index') }}" class="text-decoration-none">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="h5">Penalties &amp; Warnings</h3>
+                                <p class="text-muted mb-0">Issue and manage warnings and cash penalties{{ auth()->user()->isHod() ? ' for your department' : '' }}.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            @endif
+            <div class="col-md-4">
+                <a href="{{ route('penalties.index') }}" class="text-decoration-none">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3 class="h5">My Penalties</h3>
+                            <p class="text-muted mb-0">View warnings and penalties issued to you.</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
     @if (auth()->user()->isAdmin())
         <section class="mb-4">
             <h2 class="h5 text-muted mb-3">Administration</h2>

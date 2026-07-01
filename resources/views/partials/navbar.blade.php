@@ -18,6 +18,7 @@
                         <li><a class="dropdown-item {{ request()->routeIs('leave.index') || request()->routeIs('leave.create') || request()->routeIs('leave.show') ? 'active' : '' }}" href="{{ route('leave.index') }}">My Leave</a></li>
                         <li><a class="dropdown-item {{ request()->routeIs('balances.*') ? 'active' : '' }}" href="{{ route('balances.index') }}">My Balances</a></li>
                         <li><a class="dropdown-item {{ request()->routeIs('leave.report') ? 'active' : '' }}" href="{{ route('leave.report') }}">Leave Report</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('penalties.index') ? 'active' : '' }}" href="{{ route('penalties.index') }}">My Penalties</a></li>
                         @if (auth()->user()->isAdminOrHod())
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item {{ request()->routeIs('admin.applications.*') ? 'active' : '' }}" href="{{ route('admin.applications.index') }}">Leave Applications</a></li>
@@ -28,11 +29,12 @@
 
                 @if (auth()->user()->isAdminOrHod())
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['admin.users.*', 'admin.departments.*']) ? 'active' : '' }}" href="#" id="navAdminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['admin.users.*', 'admin.departments.*', 'admin.penalties.*', 'admin.entitlement-tiers.*', 'admin.leave-years.*']) ? 'active' : '' }}" href="#" id="navAdminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Administration
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navAdminDropdown">
                             <li><a class="dropdown-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">Users</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.penalties.*') ? 'active' : '' }}" href="{{ route('admin.penalties.index') }}">Penalties</a></li>
                             @if (auth()->user()->isAdmin())
                                 <li><a class="dropdown-item {{ request()->routeIs('admin.departments.*') ? 'active' : '' }}" href="{{ route('admin.departments.index') }}">Departments</a></li>
                                 <li><a class="dropdown-item {{ request()->routeIs('admin.entitlement-tiers.*') ? 'active' : '' }}" href="{{ route('admin.entitlement-tiers.index') }}">Entitlement Tiers</a></li>
