@@ -24,6 +24,14 @@
         </div>
     @endif
 
+    @if (! is_null($carryForwardEstimate))
+        <div class="alert alert-info">
+            <strong>Estimated Carry Forward Leave: {{ number_format($carryForwardEstimate, 1) }} day(s).</strong>
+            Live projection for {{ $leaveYear }} from this employee's unused Annual + Reward Leave so far (capped at 5 days).
+            Not yet applied &mdash; the rollover writes the final value automatically at the start of {{ $leaveYear }}.
+        </div>
+    @endif
+
     <div class="row">
         <div class="col-lg-8">
             <div class="card mb-3">
@@ -53,6 +61,9 @@
                                             </td>
                                             <td>
                                                 <input type="number" step="0.5" min="0" name="balances[{{ $index }}][entitlement_days]" value="{{ old("balances.$index.entitlement_days", $balance->entitlement_days) }}" class="form-control form-control-sm balance-input" data-row="{{ $index }}" {{ $locked ? 'disabled' : '' }}>
+                                                @if (! is_null($carryForwardEstimate) && $balance->leaveType->code === 'carry_forward')
+                                                    <div class="form-text mb-0">est. {{ number_format($carryForwardEstimate, 1) }}</div>
+                                                @endif
                                             </td>
                                             <td>
                                                 <input type="number" step="0.5" name="balances[{{ $index }}][adjustment_days]" value="{{ old("balances.$index.adjustment_days", $balance->adjustment_days) }}" class="form-control form-control-sm balance-input" data-row="{{ $index }}" {{ $locked ? 'disabled' : '' }}>

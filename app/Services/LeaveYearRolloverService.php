@@ -14,9 +14,26 @@ class LeaveYearRolloverService
 
     public function rolloverUser(User $user, int $newLeaveYear): float
     {
+        $carryForwardType = LeaveType::where('code', 'carry_forward')->firstOrFail();
+
+        $carryForwardDays = $this->estimateCarryForward($user, $newLeaveYear);
+
+        $carryForwardBalance = $this->balanceService->getOrCreateBalance($user, $carryForwardType, $newLeaveYear);
+        $carryForwardBalance->update(['entitlement_days' => $carryForwardDays]);
+
+        return $carryForwardDays;
+    }
+
+    /**
+     * Compute (without persisting) how many Carry Forward days a user would
+     * receive for the given leave year: unused Annual + Reward from the prior
+     * year, capped at 5 days total. Used both by the real rollover and by the
+     * balance screens to show a live estimate for a not-yet-rolled year.
+     */
+    public function estimateCarryForward(User $user, int $newLeaveYear): float
+    {
         $annualLeaveType = LeaveType::where('code', 'annual')->firstOrFail();
         $rewardLeaveType = LeaveType::where('code', 'reward')->first();
-        $carryForwardType = LeaveType::where('code', 'carry_forward')->firstOrFail();
 
         $previousYear = $newLeaveYear - 1;
 
@@ -26,12 +43,7 @@ class LeaveYearRolloverService
             : 0.0;
 
         // Combine unused Annual + Reward, capped at 5 days total.
-        $carryForwardDays = min(5.0, max(0.0, $annualRemaining) + max(0.0, $rewardRemaining));
-
-        $carryForwardBalance = $this->balanceService->getOrCreateBalance($user, $carryForwardType, $newLeaveYear);
-        $carryForwardBalance->update(['entitlement_days' => $carryForwardDays]);
-
-        return $carryForwardDays;
+        return min(5.0, max(0.0, $annualRemaining) + max(0.0, $rewardRemaining));
     }
 
     private function remainingFor(User $user, int $leaveTypeId, int $leaveYear): float

@@ -10,6 +10,7 @@ use App\Models\LeaveType;
 use App\Models\LeaveYearLock;
 use App\Models\User;
 use App\Services\LeaveBalanceService;
+use App\Services\LeaveYearRolloverService;
 use App\Support\LeaveYear;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class LeaveBalanceController extends Controller
     {
     }
 
-    public function edit(Request $request, User $user): View
+    public function edit(Request $request, User $user, LeaveYearRolloverService $rollover): View
     {
         if (auth()->user()->isHod() && $user->department_id !== auth()->user()->department_id) {
             abort(403);
@@ -52,7 +53,13 @@ class LeaveBalanceController extends Controller
 
         $locked = LeaveYearLock::isLocked($leaveYear);
 
-        return view('admin.balances.edit', compact('user', 'balances', 'leaveYear', 'adjustments', 'locked'));
+        // For the immediate next (not-yet-rolled) leave year, show a live estimate
+        // of Carry Forward Leave from this year's unused Annual + Reward.
+        $carryForwardEstimate = $leaveYear === LeaveYear::current() + 1
+            ? $rollover->estimateCarryForward($user, $leaveYear)
+            : null;
+
+        return view('admin.balances.edit', compact('user', 'balances', 'leaveYear', 'adjustments', 'locked', 'carryForwardEstimate'));
     }
 
     public function update(UpdateLeaveBalanceRequest $request, User $user): RedirectResponse

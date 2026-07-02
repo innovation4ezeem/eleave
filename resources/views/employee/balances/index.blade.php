@@ -16,6 +16,14 @@
         <div class="form-text">Leave year runs 1 Jan {{ $leaveYear }} &ndash; 31 Dec {{ $leaveYear }}.</div>
     </div>
 
+    @if (! is_null($carryForwardEstimate))
+        <div class="alert alert-info">
+            <strong>Estimated Carry Forward Leave: {{ number_format($carryForwardEstimate, 1) }} day(s).</strong>
+            This is a live projection for {{ $leaveYear }} based on your unused Annual + Reward Leave so far this year (capped at 5 days).
+            It is not final &mdash; it will be confirmed automatically at the start of {{ $leaveYear }} and depends on your remaining balance at year end.
+        </div>
+    @endif
+
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
@@ -32,10 +40,17 @@
                     @forelse ($balances as $balance)
                         <tr>
                             <td>{{ $balance->leaveType->name }}</td>
-                            <td class="text-end">{{ $balance->entitlement_days }}</td>
-                            <td class="text-end">{{ $balance->adjustment_days }}</td>
-                            <td class="text-end">{{ $balance->used_days }}</td>
-                            <td class="text-end"><strong>{{ $balance->remaining_days }}</strong></td>
+                            @if (! is_null($carryForwardEstimate) && $balance->leaveType->code === 'carry_forward')
+                                <td class="text-end">{{ number_format($carryForwardEstimate, 1) }} <span class="badge bg-info text-dark">est.</span></td>
+                                <td class="text-end">{{ $balance->adjustment_days }}</td>
+                                <td class="text-end">{{ $balance->used_days }}</td>
+                                <td class="text-end"><strong>{{ number_format($carryForwardEstimate + (float) $balance->adjustment_days - (float) $balance->used_days, 1) }}</strong></td>
+                            @else
+                                <td class="text-end">{{ $balance->entitlement_days }}</td>
+                                <td class="text-end">{{ $balance->adjustment_days }}</td>
+                                <td class="text-end">{{ $balance->used_days }}</td>
+                                <td class="text-end"><strong>{{ $balance->remaining_days }}</strong></td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
