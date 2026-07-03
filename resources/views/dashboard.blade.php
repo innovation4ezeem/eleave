@@ -158,6 +158,52 @@
         </div>
     </section>
 
+    <section class="mb-4">
+        <h2 class="h5 text-muted mb-3">Performance</h2>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a href="{{ route('competence.index') }}" class="text-decoration-none">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3 class="h5">Personal Competence</h3>
+                            <p class="text-muted mb-0">Vote for colleagues and see the votes you've received.</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ route('performance.index') }}" class="text-decoration-none">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3 class="h5">{{ auth()->user()->isAdmin() ? 'Performance Entries' : 'My Performance' }}</h3>
+                            <p class="text-muted mb-0">
+                                @if (auth()->user()->isAdmin())
+                                    Enter monthly values and view computed scores.
+                                @elseif (auth()->user()->isHod())
+                                    View your own and your department's performance scores.
+                                @else
+                                    View your monthly performance scores.
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            @if (auth()->user()->isAdmin())
+                <div class="col-md-4">
+                    <a href="{{ route('admin.performance-settings.index') }}" class="text-decoration-none">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="h5">Scoring Formula</h3>
+                                <p class="text-muted mb-0">Customize inputs and score components.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            @endif
+        </div>
+    </section>
+
     @if (auth()->user()->isAdmin())
         <section class="mb-4">
             <h2 class="h5 text-muted mb-3">Administration</h2>

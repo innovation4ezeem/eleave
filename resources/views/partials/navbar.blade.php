@@ -27,6 +27,23 @@
                     </ul>
                 </li>
 
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ request()->routeIs(['competence.*', 'performance.*', 'admin.competence-categories.*', 'admin.competence-votes.*', 'admin.performance-settings.*', 'admin.performance-entries.*']) ? 'active' : '' }}" href="#" id="navPerformanceDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Performance
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navPerformanceDropdown">
+                        <li><a class="dropdown-item {{ request()->routeIs('competence.*') ? 'active' : '' }}" href="{{ route('competence.index') }}">My Competence</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('performance.*') ? 'active' : '' }}" href="{{ route('performance.index') }}">{{ auth()->user()->isAdmin() ? 'Performance Entries' : 'My Performance' }}</a></li>
+                        @if (auth()->user()->isAdmin())
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.performance-entries.*') ? 'active' : '' }}" href="{{ route('admin.performance-entries.index') }}">Manage Entries</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.performance-settings.*') ? 'active' : '' }}" href="{{ route('admin.performance-settings.index') }}">Scoring Formula</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.competence-categories.*') ? 'active' : '' }}" href="{{ route('admin.competence-categories.index') }}">Competence Categories</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.competence-votes.*') ? 'active' : '' }}" href="{{ route('admin.competence-votes.index') }}">Voting Log</a></li>
+                        @endif
+                    </ul>
+                </li>
+
                 @if (auth()->user()->isAdminOrHod())
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs(['admin.users.*', 'admin.departments.*', 'admin.penalties.*', 'admin.entitlement-tiers.*', 'admin.leave-years.*']) ? 'active' : '' }}" href="#" id="navAdminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

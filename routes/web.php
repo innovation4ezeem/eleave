@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\CompetenceCategoryController;
+use App\Http\Controllers\Admin\CompetenceVoteLogController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\HistoricalLeaveController;
 use App\Http\Controllers\Admin\LeaveApplicationController as AdminLeaveApplicationController;
@@ -7,13 +9,17 @@ use App\Http\Controllers\Admin\LeaveBalanceController as AdminLeaveBalanceContro
 use App\Http\Controllers\Admin\LeaveEntitlementTierController;
 use App\Http\Controllers\Admin\LeaveYearController;
 use App\Http\Controllers\Admin\PenaltyController as AdminPenaltyController;
+use App\Http\Controllers\Admin\PerformanceEntryController;
+use App\Http\Controllers\Admin\PerformanceSettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Employee\CompetenceController;
 use App\Http\Controllers\Employee\LeaveApplicationController;
 use App\Http\Controllers\Employee\LeaveBalanceController;
 use App\Http\Controllers\Employee\LeaveReportController;
 use App\Http\Controllers\Employee\PenaltyController as EmployeePenaltyController;
+use App\Http\Controllers\Employee\PerformanceController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +56,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/penalties', [EmployeePenaltyController::class, 'index'])->name('penalties.index');
     Route::get('/penalties/{penalty}/document', [EmployeePenaltyController::class, 'downloadDocument'])->name('penalties.document');
 
+    // Personal Competence (peer voting) — any logged-in user
+    Route::get('/competence', [CompetenceController::class, 'index'])->name('competence.index');
+    Route::post('/competence/vote', [CompetenceController::class, 'vote'])->name('competence.vote');
+
+    // Performance scores — employee sees own; HOD sees own + department; admin redirected to admin page
+    Route::get('/performance', [PerformanceController::class, 'index'])->name('performance.index');
+
     // Admin + HOD shared routes
     Route::middleware('role:admin,hod')->prefix('admin')->name('admin.')->group(function () {
 
@@ -80,6 +93,29 @@ Route::middleware('auth')->group(function () {
             Route::get('/leave-years', [LeaveYearController::class, 'index'])->name('leave-years.index');
             Route::post('/leave-years/{leaveYear}/lock', [LeaveYearController::class, 'lock'])->name('leave-years.lock');
             Route::post('/leave-years/{leaveYear}/unlock', [LeaveYearController::class, 'unlock'])->name('leave-years.unlock');
+
+            // Personal Competence — category management + voting log
+            Route::get('/competence-categories', [CompetenceCategoryController::class, 'index'])->name('competence-categories.index');
+            Route::post('/competence-categories', [CompetenceCategoryController::class, 'store'])->name('competence-categories.store');
+            Route::post('/competence-categories/{category}/toggle', [CompetenceCategoryController::class, 'toggle'])->name('competence-categories.toggle');
+            Route::delete('/competence-categories/{category}', [CompetenceCategoryController::class, 'destroy'])->name('competence-categories.destroy');
+            Route::get('/competence-votes', [CompetenceVoteLogController::class, 'index'])->name('competence-votes.index');
+
+            // Performance — customizable formula settings (inputs + components)
+            Route::get('/performance-settings', [PerformanceSettingController::class, 'index'])->name('performance-settings.index');
+            Route::post('/performance-settings/inputs', [PerformanceSettingController::class, 'storeInput'])->name('performance-settings.inputs.store');
+            Route::delete('/performance-settings/inputs/{input}', [PerformanceSettingController::class, 'destroyInput'])->name('performance-settings.inputs.destroy');
+            Route::post('/performance-settings/components', [PerformanceSettingController::class, 'storeComponent'])->name('performance-settings.components.store');
+            Route::put('/performance-settings/components/{component}', [PerformanceSettingController::class, 'updateComponent'])->name('performance-settings.components.update');
+            Route::delete('/performance-settings/components/{component}', [PerformanceSettingController::class, 'destroyComponent'])->name('performance-settings.components.destroy');
+
+            // Performance — monthly score entries ('create' before the '{performanceEntry}' wildcard)
+            Route::get('/performance-entries', [PerformanceEntryController::class, 'index'])->name('performance-entries.index');
+            Route::get('/performance-entries/create', [PerformanceEntryController::class, 'create'])->name('performance-entries.create');
+            Route::post('/performance-entries', [PerformanceEntryController::class, 'store'])->name('performance-entries.store');
+            Route::get('/performance-entries/{performanceEntry}/edit', [PerformanceEntryController::class, 'edit'])->name('performance-entries.edit');
+            Route::put('/performance-entries/{performanceEntry}', [PerformanceEntryController::class, 'update'])->name('performance-entries.update');
+            Route::delete('/performance-entries/{performanceEntry}', [PerformanceEntryController::class, 'destroy'])->name('performance-entries.destroy');
         });
 
         // Users — HOD can view and edit their dept's users
