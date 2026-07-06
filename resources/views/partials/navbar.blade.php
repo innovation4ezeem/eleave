@@ -39,6 +39,7 @@
                             <li><a class="dropdown-item {{ request()->routeIs('admin.performance-entries.*') ? 'active' : '' }}" href="{{ route('admin.performance-entries.index') }}">Manage Entries</a></li>
                             <li><a class="dropdown-item {{ request()->routeIs('admin.performance-settings.*') ? 'active' : '' }}" href="{{ route('admin.performance-settings.index') }}">Scoring Formula</a></li>
                             <li><a class="dropdown-item {{ request()->routeIs('admin.competence-categories.*') ? 'active' : '' }}" href="{{ route('admin.competence-categories.index') }}">Competence Categories</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.competence-results.*') ? 'active' : '' }}" href="{{ route('admin.competence-results.index') }}">Competence Results</a></li>
                             <li><a class="dropdown-item {{ request()->routeIs('admin.competence-votes.*') ? 'active' : '' }}" href="{{ route('admin.competence-votes.index') }}">Voting Log</a></li>
                         @endif
                     </ul>

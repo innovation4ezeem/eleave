@@ -100,6 +100,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/competence-categories/{category}/toggle', [CompetenceCategoryController::class, 'toggle'])->name('competence-categories.toggle');
             Route::delete('/competence-categories/{category}', [CompetenceCategoryController::class, 'destroy'])->name('competence-categories.destroy');
             Route::get('/competence-votes', [CompetenceVoteLogController::class, 'index'])->name('competence-votes.index');
+            Route::get('/competence-results', [CompetenceVoteLogController::class, 'results'])->name('competence-results.index');
 
             // Performance — customizable formula settings (inputs + components)
             Route::get('/performance-settings', [PerformanceSettingController::class, 'index'])->name('performance-settings.index');

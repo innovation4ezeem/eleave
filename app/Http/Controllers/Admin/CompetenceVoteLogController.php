@@ -57,4 +57,44 @@ class CompetenceVoteLogController extends Controller
             'categories' => $categories,
         ]);
     }
+
+    /**
+     * Summary of votes received by every person, broken down by category,
+     * within an optional date range.
+     */
+    public function results(Request $request): View
+    {
+        $counts = CompetenceVote::query()
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('date_from')))
+            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('created_at', '<=', $request->input('date_to')))
+            ->selectRaw('votee_id, category_id, COUNT(*) as total')
+            ->groupBy('votee_id', 'category_id')
+            ->get();
+
+        // Pivot into matrix[votee_id][category_id] = total, plus per-user grand totals.
+        $matrix = [];
+        $userTotals = [];
+        foreach ($counts as $row) {
+            $matrix[$row->votee_id][$row->category_id] = (int) $row->total;
+            $userTotals[$row->votee_id] = ($userTotals[$row->votee_id] ?? 0) + (int) $row->total;
+        }
+
+        $categories = CompetenceCategory::orderBy('sort_order')->orderBy('name')->get(['id', 'name']);
+
+        // Everyone who can receive votes (non-admin), ordered so the highest totals surface first.
+        $users = User::whereIn('role', ['employee', 'hod'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'role'])
+            ->sortByDesc(fn ($u) => $userTotals[$u->id] ?? 0)
+            ->values();
+
+        return view('admin.competence-votes.results', [
+            'categories' => $categories,
+            'users' => $users,
+            'matrix' => $matrix,
+            'userTotals' => $userTotals,
+            'dateFrom' => $request->input('date_from'),
+            'dateTo' => $request->input('date_to'),
+        ]);
+    }
 }
