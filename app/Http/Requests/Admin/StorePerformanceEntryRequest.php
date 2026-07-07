@@ -20,9 +20,9 @@ class StorePerformanceEntryRequest extends FormRequest
             'month' => ['required', 'integer', 'min:1', 'max:12'],
         ];
 
-        // One numeric rule per configured performance input.
+        // Each input is optional — admins may fill some now and the rest later.
         foreach (PerformanceInput::pluck('key') as $key) {
-            $rules["values.$key"] = ['required', 'numeric', 'min:0'];
+            $rules["values.$key"] = ['nullable', 'numeric', 'min:0'];
         }
 
         return $rules;

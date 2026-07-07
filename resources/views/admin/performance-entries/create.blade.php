@@ -63,7 +63,7 @@
                                 <label for="in_{{ $input->key }}" class="form-label">{{ $input->label }} <code class="small text-muted">{{ $input->key }}</code></label>
                                 <input type="number" step="any" min="0" id="in_{{ $input->key }}" name="values[{{ $input->key }}]"
                                        value="{{ old('values.'.$input->key, $entry?->values[$input->key] ?? '') }}"
-                                       class="form-control @error('values.'.$input->key) is-invalid @enderror" required>
+                                       class="form-control @error('values.'.$input->key) is-invalid @enderror">
                                 @error('values.'.$input->key)
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -71,7 +71,7 @@
                         @endforeach
                     </div>
 
-                    <div class="form-text mb-3">The score is calculated automatically from the current formula when you save. Re-saving recalculates using today's formula.</div>
+                    <div class="form-text mb-3">You can leave some fields blank and fill them in later &mdash; only components whose inputs are complete will be scored, and the total updates each time you save.</div>
 
                     <button type="submit" class="btn btn-primary">{{ $entry ? 'Update & Recalculate' : 'Save & Calculate Score' }}</button>
                 @endif
@@ -80,15 +80,21 @@
     </div>
 
     @if ($entry)
+        @php $isPartial = collect($entry->scores)->contains(null); @endphp
         <div class="card mt-3">
-            <div class="card-header">Current Computed Score &mdash; {{ $entry->periodLabel() }}</div>
+            <div class="card-header">
+                Current Computed Score &mdash; {{ $entry->periodLabel() }}
+                @if ($isPartial)
+                    <span class="badge bg-warning text-dark ms-1">Partial</span>
+                @endif
+            </div>
             <div class="card-body">
                 <ul class="mb-2">
                     @foreach ($entry->scores as $name => $score)
-                        <li>{{ $name }}: <strong>{{ number_format((float) $score, 2) }}</strong></li>
+                        <li>{{ $name }}: <strong>{{ is_null($score) ? '— (pending)' : number_format((float) $score, 2) }}</strong></li>
                     @endforeach
                 </ul>
-                <div class="h5 mb-0">Total: {{ number_format((float) $entry->total_score, 2) }}</div>
+                <div class="h5 mb-0">Total{{ $isPartial ? ' so far' : '' }}: {{ number_format((float) $entry->total_score, 2) }}</div>
             </div>
         </div>
     @endif

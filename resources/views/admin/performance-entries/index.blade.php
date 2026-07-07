@@ -62,10 +62,15 @@
                             <td>{{ $entry->user?->name ?? '(Deleted)' }}</td>
                             <td>
                                 @foreach ($entry->scores as $name => $score)
-                                    <span class="badge bg-light text-dark border me-1">{{ $name }}: {{ number_format((float) $score, 2) }}</span>
+                                    <span class="badge bg-light text-dark border me-1">{{ $name }}: {{ is_null($score) ? '—' : number_format((float) $score, 2) }}</span>
                                 @endforeach
                             </td>
-                            <td class="text-end"><strong>{{ number_format((float) $entry->total_score, 2) }}</strong></td>
+                            <td class="text-end">
+                                <strong>{{ number_format((float) $entry->total_score, 2) }}</strong>
+                                @if (collect($entry->scores)->contains(null))
+                                    <span class="badge bg-warning text-dark d-block mt-1">Partial</span>
+                                @endif
+                            </td>
                             <td class="small text-muted">{{ $entry->enteredBy?->name ?? '—' }}</td>
                             <td class="text-end">
                                 <a href="{{ route('admin.performance-entries.edit', $entry) }}" class="btn btn-sm btn-outline-secondary">Edit</a>

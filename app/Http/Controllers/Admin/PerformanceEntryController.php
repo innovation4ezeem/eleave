@@ -55,7 +55,7 @@ class PerformanceEntryController extends Controller
     public function store(StorePerformanceEntryRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $values = array_map('floatval', $data['values']);
+        $values = $this->normalizeValues($data['values'] ?? []);
 
         $computed = $this->scoreService->compute($values);
 
@@ -70,7 +70,23 @@ class PerformanceEntryController extends Controller
         );
 
         return redirect()->route('admin.performance-entries.index')
-            ->with('success', 'Performance entry saved (total score: '.$computed['total'].').');
+            ->with('success', 'Performance entry saved (total score: '.$computed['total'].($computed['complete'] ? '' : ' — partial, some inputs still blank').').');
+    }
+
+    /**
+     * Keep blank inputs as null (pending) instead of coercing them to 0.
+     *
+     * @param  array<string, mixed>  $raw
+     * @return array<string, float|null>
+     */
+    private function normalizeValues(array $raw): array
+    {
+        $values = [];
+        foreach ($raw as $key => $value) {
+            $values[$key] = ($value === null || $value === '') ? null : (float) $value;
+        }
+
+        return $values;
     }
 
     public function edit(PerformanceEntry $performanceEntry): View
@@ -88,7 +104,7 @@ class PerformanceEntryController extends Controller
     public function update(StorePerformanceEntryRequest $request, PerformanceEntry $performanceEntry): RedirectResponse
     {
         $data = $request->validated();
-        $values = array_map('floatval', $data['values']);
+        $values = $this->normalizeValues($data['values'] ?? []);
 
         $computed = $this->scoreService->compute($values);
 
@@ -103,7 +119,7 @@ class PerformanceEntryController extends Controller
         ]);
 
         return redirect()->route('admin.performance-entries.index')
-            ->with('success', 'Performance entry updated (total score: '.$computed['total'].').');
+            ->with('success', 'Performance entry updated (total score: '.$computed['total'].($computed['complete'] ? '' : ' — partial, some inputs still blank').').');
     }
 
     public function destroy(PerformanceEntry $performanceEntry): RedirectResponse
