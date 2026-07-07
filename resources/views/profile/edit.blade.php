@@ -73,4 +73,13 @@
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            @include('partials.work-experiences', ['profileUser' => $user])
+        </div>
+        <div class="col-lg-6">
+            @include('partials.achievements', ['profileUser' => $user])
+        </div>
+    </div>
 @endsection

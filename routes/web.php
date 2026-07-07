@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\PenaltyController as AdminPenaltyController;
 use App\Http\Controllers\Admin\PerformanceEntryController;
 use App\Http\Controllers\Admin\PerformanceSettingController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Employee\CompetenceController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Employee\LeaveReportController;
 use App\Http\Controllers\Employee\PenaltyController as EmployeePenaltyController;
 use App\Http\Controllers\Employee\PerformanceController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WorkExperienceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -38,6 +40,15 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+
+    // Working experience & achievements — permission enforced by the 'manage-profile' gate
+    // (self, admin, or HOD of the target's department).
+    Route::post('/users/{user}/experiences', [WorkExperienceController::class, 'store'])->name('experiences.store');
+    Route::put('/experiences/{workExperience}', [WorkExperienceController::class, 'update'])->name('experiences.update');
+    Route::delete('/experiences/{workExperience}', [WorkExperienceController::class, 'destroy'])->name('experiences.destroy');
+    Route::post('/users/{user}/achievements', [AchievementController::class, 'store'])->name('achievements.store');
+    Route::put('/achievements/{achievement}', [AchievementController::class, 'update'])->name('achievements.update');
+    Route::delete('/achievements/{achievement}', [AchievementController::class, 'destroy'])->name('achievements.destroy');
 
     Route::prefix('leave')->name('leave.')->group(function () {
         Route::get('/', [LeaveApplicationController::class, 'index'])->name('index');

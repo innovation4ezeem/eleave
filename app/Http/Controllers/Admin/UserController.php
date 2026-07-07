@@ -66,7 +66,7 @@ class UserController extends Controller
             abort(403);
         }
 
-        $user->load('department');
+        $user->load('department', 'workExperiences', 'achievements');
 
         $leaveYear = LeaveYear::current();
 

@@ -71,6 +71,18 @@ class User extends Authenticatable
         return $this->hasMany(Penalty::class);
     }
 
+    public function workExperiences(): HasMany
+    {
+        return $this->hasMany(WorkExperience::class)
+            ->orderByRaw('end_date IS NULL DESC')
+            ->orderByDesc('start_date');
+    }
+
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(Achievement::class)->orderByDesc('achieved_on');
+    }
+
     public function approvedDepartments(): BelongsToMany
     {
         return $this->belongsToMany(Department::class, 'department_approvers');

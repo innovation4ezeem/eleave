@@ -12,7 +12,7 @@ class ProfileController extends Controller
 {
     public function edit(Request $request): View
     {
-        $user = $request->user()->load('department');
+        $user = $request->user()->load('department', 'workExperiences', 'achievements');
 
         return view('profile.edit', compact('user'));
     }
