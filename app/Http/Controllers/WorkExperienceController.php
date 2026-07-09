@@ -12,8 +12,7 @@ class WorkExperienceController extends Controller
 {
     public function store(StoreWorkExperienceRequest $request, User $user): RedirectResponse
     {
-        Gate::authorize('manage-profile', $user);
-
+        // Authorization handled in StoreWorkExperienceRequest::authorize().
         $user->workExperiences()->create($request->validated());
 
         return back()->with('success', 'Working experience added.');
@@ -21,8 +20,7 @@ class WorkExperienceController extends Controller
 
     public function update(StoreWorkExperienceRequest $request, WorkExperience $workExperience): RedirectResponse
     {
-        Gate::authorize('manage-profile', $workExperience->user);
-
+        // Authorization handled in StoreWorkExperienceRequest::authorize().
         $workExperience->update($request->validated());
 
         return back()->with('success', 'Working experience updated.');
@@ -30,7 +28,9 @@ class WorkExperienceController extends Controller
 
     public function destroy(WorkExperience $workExperience): RedirectResponse
     {
-        Gate::authorize('manage-profile', $workExperience->user);
+        // Resolve with trashed so an orphaned record (owner soft-deleted) denies
+        // cleanly rather than passing null to the gate.
+        Gate::authorize('manage-profile', $workExperience->user()->withTrashed()->first());
 
         $workExperience->delete();
 

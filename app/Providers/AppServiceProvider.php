@@ -28,7 +28,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Who may add/edit a person's working experience & achievements:
         // the person themselves, any admin, or the HOD of their department.
-        Gate::define('manage-profile', function (User $user, User $target) {
+        // $target is nullable so an orphaned record (owner soft-deleted) denies
+        // cleanly with 403 instead of crashing the gate closure.
+        Gate::define('manage-profile', function (User $user, ?User $target = null) {
+            if ($target === null) {
+                return false;
+            }
+
             return $user->id === $target->id
                 || $user->isAdmin()
                 || ($user->isHod() && $user->department_id !== null && $user->department_id === $target->department_id);

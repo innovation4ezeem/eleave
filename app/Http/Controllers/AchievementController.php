@@ -12,8 +12,7 @@ class AchievementController extends Controller
 {
     public function store(StoreAchievementRequest $request, User $user): RedirectResponse
     {
-        Gate::authorize('manage-profile', $user);
-
+        // Authorization handled in StoreAchievementRequest::authorize().
         $user->achievements()->create($request->validated());
 
         return back()->with('success', 'Achievement added.');
@@ -21,8 +20,7 @@ class AchievementController extends Controller
 
     public function update(StoreAchievementRequest $request, Achievement $achievement): RedirectResponse
     {
-        Gate::authorize('manage-profile', $achievement->user);
-
+        // Authorization handled in StoreAchievementRequest::authorize().
         $achievement->update($request->validated());
 
         return back()->with('success', 'Achievement updated.');
@@ -30,7 +28,9 @@ class AchievementController extends Controller
 
     public function destroy(Achievement $achievement): RedirectResponse
     {
-        Gate::authorize('manage-profile', $achievement->user);
+        // Resolve with trashed so an orphaned record (owner soft-deleted) denies
+        // cleanly rather than passing null to the gate.
+        Gate::authorize('manage-profile', $achievement->user()->withTrashed()->first());
 
         $achievement->delete();
 
