@@ -27,7 +27,10 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
 
         // Who may add/edit a person's working experience & achievements:
-        // the person themselves, any admin, or the HOD of their department.
+        // the person themselves, any admin, or the HOD of their department
+        // (but a HOD only manages plain employees in their department, not
+        // admins or fellow HODs — managing a peer/superior would be a privilege
+        // inversion; a HOD's own profile is covered by the self check).
         // $target is nullable so an orphaned record (owner soft-deleted) denies
         // cleanly with 403 instead of crashing the gate closure.
         Gate::define('manage-profile', function (User $user, ?User $target = null) {
@@ -37,7 +40,10 @@ class AppServiceProvider extends ServiceProvider
 
             return $user->id === $target->id
                 || $user->isAdmin()
-                || ($user->isHod() && $user->department_id !== null && $user->department_id === $target->department_id);
+                || ($user->isHod()
+                    && ! $target->isAdminOrHod()
+                    && $user->department_id !== null
+                    && $user->department_id === $target->department_id);
         });
     }
 }
