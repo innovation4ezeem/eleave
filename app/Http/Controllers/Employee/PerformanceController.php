@@ -20,38 +20,54 @@ class PerformanceController extends Controller
             return redirect()->route('admin.performance-entries.index');
         }
 
-        $query = PerformanceEntry::with(['user' => fn ($q) => $q->withTrashed()])
-            ->orderByDesc('year')
-            ->orderByDesc('month');
-
         $isManagerView = $viewer->isHod();
 
         if ($isManagerView) {
             // HOD: own entries + entries of employees in their department.
-            $deptUserIds = User::where('department_id', $viewer->department_id)->pluck('id')->push($viewer->id);
-            $query->whereIn('user_id', $deptUserIds);
-
-            if ($request->filled('user_id') && $deptUserIds->contains((int) $request->input('user_id'))) {
-                $query->where('user_id', $request->input('user_id'));
-            }
+            $scopedUserIds = User::where('department_id', $viewer->department_id)->pluck('id')->push($viewer->id);
 
             $employees = User::where('department_id', $viewer->department_id)
                 ->where('id', '!=', $viewer->id)
                 ->orderBy('name')
                 ->get(['id', 'name']);
+
+            // Optional per-employee filter (must be within the department scope).
+            if ($request->filled('user_id') && $scopedUserIds->contains((int) $request->input('user_id'))) {
+                $scopedUserIds = collect([(int) $request->input('user_id')]);
+            }
         } else {
             // Employee: only their own scores.
-            $query->where('user_id', $viewer->id);
+            $scopedUserIds = collect([$viewer->id]);
             $employees = collect();
         }
 
-        $entries = $query->paginate(24)->withQueryString();
+        $entries = PerformanceEntry::with(['user' => fn ($q) => $q->withTrashed()])
+            ->whereIn('user_id', $scopedUserIds)
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->paginate(24)
+            ->withQueryString();
+
+        // Yearly summary: total and average per employee per year. AVG divides by
+        // the number of months that actually have an entry (not by 12).
+        $summaries = PerformanceEntry::query()
+            ->whereIn('user_id', $scopedUserIds)
+            ->selectRaw('user_id, year, COUNT(*) as months, SUM(total_score) as total, AVG(total_score) as average')
+            ->groupBy('user_id', 'year')
+            ->orderByDesc('year')
+            ->get();
+
+        $names = User::withTrashed()
+            ->whereIn('id', $summaries->pluck('user_id')->unique())
+            ->pluck('name', 'id');
 
         return view('employee.performance.index', [
             'entries' => $entries,
             'isManagerView' => $isManagerView,
             'employees' => $employees,
             'selectedUserId' => $request->input('user_id'),
+            'summaries' => $summaries,
+            'names' => $names,
         ]);
     }
 }

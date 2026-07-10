@@ -42,6 +42,38 @@
         </div>
     </form>
 
+    <div class="card mb-4">
+        <div class="card-header">Yearly Summary <span class="text-muted small">(average is over months with a recorded score, not ÷ 12)</span></div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Year</th>
+                        <th class="text-end">Months Recorded</th>
+                        <th class="text-end">Total Score</th>
+                        <th class="text-end">Average Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($summaries as $summary)
+                        <tr>
+                            <td>{{ $summaryNames[$summary->user_id] ?? '(Deleted)' }}</td>
+                            <td>{{ $summary->year }}</td>
+                            <td class="text-end">{{ $summary->months }}</td>
+                            <td class="text-end">{{ number_format((float) $summary->total, 2) }}</td>
+                            <td class="text-end"><strong>{{ number_format((float) $summary->average, 2) }}</strong></td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">No yearly totals yet.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">

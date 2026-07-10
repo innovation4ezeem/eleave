@@ -37,7 +37,22 @@ class PerformanceEntryController extends Controller
         $entries = $query->paginate(30)->withQueryString();
         $employees = User::whereIn('role', ['employee', 'hod'])->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.performance-entries.index', compact('entries', 'employees'));
+        // Yearly summary: total and average per employee per year, honoring the
+        // employee/year filters (month is ignored — this is a whole-year rollup).
+        // AVG divides by the number of months that have an entry, not by 12.
+        $summaries = PerformanceEntry::query()
+            ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', $request->input('user_id')))
+            ->when($request->filled('year'), fn ($q) => $q->where('year', $request->input('year')))
+            ->selectRaw('user_id, year, COUNT(*) as months, SUM(total_score) as total, AVG(total_score) as average')
+            ->groupBy('user_id', 'year')
+            ->orderByDesc('year')
+            ->get();
+
+        $summaryNames = User::withTrashed()
+            ->whereIn('id', $summaries->pluck('user_id')->unique())
+            ->pluck('name', 'id');
+
+        return view('admin.performance-entries.index', compact('entries', 'employees', 'summaries', 'summaryNames'));
     }
 
     public function create(): View
