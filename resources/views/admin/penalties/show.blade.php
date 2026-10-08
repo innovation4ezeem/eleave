@@ -16,11 +16,27 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-4">Employee</dt>
-                        <dd class="col-sm-8">{{ $penalty->user?->name ?? '(Deleted)' }}@if ($penalty->user?->employee_no) ({{ $penalty->user->employee_no }})@endif</dd>
+                        <dt class="col-sm-4">Target</dt>
+                        <dd class="col-sm-8">
+                            @if ($penalty->user_id)
+                                <span class="badge bg-secondary me-1">Individual</span>
+                                {{ $penalty->user?->name ?? '(Deleted)' }}
+                                @if ($penalty->user?->employee_no)({{ $penalty->user->employee_no }})@endif
+                            @else
+                                <span class="badge bg-info text-dark me-1">Department</span>
+                                {{ $penalty->department?->name ?? '—' }}
+                            @endif
+                        </dd>
 
+                        @if ($penalty->user_id)
                         <dt class="col-sm-4">Department</dt>
-                        <dd class="col-sm-8">{{ $penalty->department?->name ?? '—' }}{{ $penalty->subdivision ? ' / ' . $penalty->subdivision->name : '' }}</dd>
+                        <dd class="col-sm-8">{{ $penalty->department?->name ?? '—' }}</dd>
+                        @endif
+
+                        @if ($penalty->subdivision)
+                        <dt class="col-sm-4">Subdivision</dt>
+                        <dd class="col-sm-8">{{ $penalty->subdivision->name }}</dd>
+                        @endif
 
                         <dt class="col-sm-4">Date</dt>
                         <dd class="col-sm-8">{{ $penalty->penalty_date->format('d M Y') }}</dd>

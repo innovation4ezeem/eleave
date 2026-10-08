@@ -29,10 +29,14 @@ class PenaltyController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->whereHas('user', function ($q) use ($search) {
-                $q->withTrashed()
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('employee_no', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($u) use ($search) {
+                    $u->withTrashed()
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('employee_no', 'like', "%{$search}%");
+                })->orWhereHas('department', function ($d) use ($search) {
+                    $d->where('name', 'like', "%{$search}%");
+                });
             });
         }
 
@@ -63,40 +67,43 @@ class PenaltyController extends Controller
 
     public function create(): View
     {
-        $employees = $this->employeeList();
+        $employees    = $this->employeeList();
+        $departments  = \App\Models\Department::where('is_active', true)->orderBy('name')->get();
+        $subdivisions = \App\Models\Subdivision::with('department')->orderBy('name')->get();
 
-        $subdivisions = \App\Models\Subdivision::orderBy('name')
-            ->get()
-            ->groupBy('department_id');
-
-        return view('admin.penalties.create', compact('employees', 'subdivisions'));
+        return view('admin.penalties.create', compact('employees', 'departments', 'subdivisions'));
     }
 
     public function store(StorePenaltyRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $user = User::findOrFail($data['user_id']);
 
-        $this->authorizeDept($user->department_id);
+        $isIndividual = $data['target_type'] === 'individual';
+        $user         = $isIndividual ? User::findOrFail($data['user_id']) : null;
+        $departmentId = $isIndividual ? $user->department_id : (int) $data['department_id'];
+
+        $this->authorizeDept($departmentId);
+
+        $storePath = $user ? 'penalty-documents/'.$user->id : 'penalty-documents/dept-'.$departmentId;
 
         $penalty = new Penalty([
-            'user_id' => $user->id,
-            'department_id' => $user->department_id,
-            'subdivision_id' => $data['subdivision_id'] ?? null,
-            'penalty_date' => $data['penalty_date'],
-            'mistake' => $data['mistake'],
-            'penalty_type' => $data['penalty_type'],
-            'penalty_level' => $data['penalty_level'],
-            'penalty_charges' => $data['penalty_type'] === 'cash' ? $data['penalty_charges'] : null,
-            'reported_by' => $data['reported_by'] ?? auth()->user()->name,
-            'remarks' => $data['remarks'] ?? null,
-            'created_by' => auth()->id(),
-            'collection_status' => $data['penalty_type'] === 'cash' ? 'pending' : null,
+            'user_id'          => $user?->id,
+            'department_id'    => $departmentId,
+            'subdivision_id'   => $data['subdivision_id'] ?? null,
+            'penalty_date'     => $data['penalty_date'],
+            'mistake'          => $data['mistake'],
+            'penalty_type'     => $data['penalty_type'],
+            'penalty_level'    => $data['penalty_level'],
+            'penalty_charges'  => $data['penalty_type'] === 'cash' ? $data['penalty_charges'] : null,
+            'reported_by'      => $data['reported_by'] ?? auth()->user()->name,
+            'remarks'          => $data['remarks'] ?? null,
+            'created_by'       => auth()->id(),
+            'collection_status'=> $data['penalty_type'] === 'cash' ? 'pending' : null,
         ]);
 
         if ($request->hasFile('document')) {
             $file = $request->file('document');
-            $penalty->document_path = $file->store('penalty-documents/'.$user->id, 'local');
+            $penalty->document_path = $file->store($storePath, 'local');
             $penalty->document_original_name = $file->getClientOriginalName();
         }
 
@@ -120,37 +127,37 @@ class PenaltyController extends Controller
     {
         $this->authorizeDept($penalty->department_id);
 
-        $employees = $this->employeeList();
+        $employees    = $this->employeeList();
+        $departments  = \App\Models\Department::where('is_active', true)->orderBy('name')->get();
+        $subdivisions = \App\Models\Subdivision::with('department')->orderBy('name')->get();
 
-        $subdivisions = \App\Models\Subdivision::orderBy('name')
-            ->get()
-            ->groupBy('department_id');
-
-        return view('admin.penalties.edit', compact('penalty', 'employees', 'subdivisions'));
+        return view('admin.penalties.edit', compact('penalty', 'employees', 'departments', 'subdivisions'));
     }
 
     public function update(UpdatePenaltyRequest $request, Penalty $penalty): RedirectResponse
     {
         $this->authorizeDept($penalty->department_id);
 
-        $data = $request->validated();
-        $user = User::findOrFail($data['user_id']);
+        $data         = $request->validated();
+        $isIndividual = $data['target_type'] === 'individual';
+        $user         = $isIndividual ? User::findOrFail($data['user_id']) : null;
+        $departmentId = $isIndividual ? $user->department_id : (int) $data['department_id'];
 
-        $this->authorizeDept($user->department_id);
+        $this->authorizeDept($departmentId);
 
         $isCash = $data['penalty_type'] === 'cash';
 
         $penalty->fill([
-            'user_id' => $user->id,
-            'department_id' => $user->department_id,
+            'user_id'        => $user?->id,
+            'department_id'  => $departmentId,
             'subdivision_id' => $data['subdivision_id'] ?? null,
-            'penalty_date' => $data['penalty_date'],
-            'mistake' => $data['mistake'],
-            'penalty_type' => $data['penalty_type'],
-            'penalty_level' => $data['penalty_level'],
-            'penalty_charges' => $isCash ? $data['penalty_charges'] : null,
-            'reported_by' => $data['reported_by'] ?? auth()->user()->name,
-            'remarks' => $data['remarks'] ?? null,
+            'penalty_date'   => $data['penalty_date'],
+            'mistake'        => $data['mistake'],
+            'penalty_type'   => $data['penalty_type'],
+            'penalty_level'  => $data['penalty_level'],
+            'penalty_charges'=> $isCash ? $data['penalty_charges'] : null,
+            'reported_by'    => $data['reported_by'] ?? auth()->user()->name,
+            'remarks'        => $data['remarks'] ?? null,
         ]);
 
         // Keep collection tracking consistent with the type.
