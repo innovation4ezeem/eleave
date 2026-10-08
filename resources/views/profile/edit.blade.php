@@ -75,11 +75,49 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-4">
             @include('partials.work-experiences', ['profileUser' => $user])
         </div>
-        <div class="col-lg-6">
+        <div class="col-lg-4">
+            @include('partials.staff-achievements', ['profileUser' => $user])
+        </div>
+        <div class="col-lg-4">
             @include('partials.achievements', ['profileUser' => $user])
         </div>
     </div>
+
+    @if ($user->id === auth()->id() && $user->warningLetters()->exists())
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        Warning Letters
+                        <a href="{{ route('warning-letters.index') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Date Issued</th>
+                                    <th>Level</th>
+                                    <th>Letter</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($user->warningLetters()->latest('issued_date')->get()->take(3) as $letter)
+                                    <tr>
+                                        <td class="ps-3">{{ $letter->issued_date->format('d M Y') }}</td>
+                                        <td>{{ $letter->level }}</td>
+                                        <td>
+                                            <a href="{{ route('warning-letters.download', $letter) }}">Download</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 @endsection

@@ -1,4 +1,4 @@
-USE hotelsys_hrsystem;
+USE eleave_rehearsal;
 -- =============================================================================
 -- T-004 / T-005  Warning Letters: create warning_letters + warning_letter_events (phpMyAdmin)
 -- =============================================================================

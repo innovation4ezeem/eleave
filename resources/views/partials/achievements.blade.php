@@ -1,7 +1,7 @@
 {{-- Expects: $profileUser (User with achievements loaded) --}}
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Achievements</span>
+        <span>Courses</span>
         @can('manage-profile', $profileUser)
             <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addAchievement">+ Add</button>
         @endcan
@@ -26,7 +26,7 @@
                         <label class="form-label mb-0">Description</label>
                         <textarea name="description" rows="2" class="form-control form-control-sm">{{ old('_form') === 'ach_add' ? old('description') : '' }}</textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-sm">Add Achievement</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Add Course</button>
                 </form>
             </div>
         @endcan
@@ -44,7 +44,7 @@
                     @can('manage-profile', $profileUser)
                         <div class="text-nowrap">
                             <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#editAch{{ $ach->id }}">Edit</button>
-                            <form method="POST" action="{{ route('achievements.destroy', $ach) }}" class="d-inline" onsubmit="return confirm('Delete this achievement?');">
+                            <form method="POST" action="{{ route('achievements.destroy', $ach) }}" class="d-inline" onsubmit="return confirm('Delete this course?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
@@ -77,7 +77,7 @@
                 @endcan
             </div>
         @empty
-            <p class="text-muted mb-0">No achievements recorded yet.</p>
+            <p class="text-muted mb-0">No courses recorded yet.</p>
         @endforelse
     </div>
 </div>

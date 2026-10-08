@@ -92,6 +92,11 @@ class User extends Authenticatable
         return $this->hasMany(Achievement::class)->orderByDesc('achieved_on');
     }
 
+    public function staffAchievements(): HasMany
+    {
+        return $this->hasMany(StaffAchievement::class)->orderByDesc('achieved_on');
+    }
+
     public function approvedDepartments(): BelongsToMany
     {
         return $this->belongsToMany(Department::class, 'department_approvers');

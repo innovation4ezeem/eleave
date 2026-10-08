@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\PerformanceSettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WarningLetterController as AdminWarningLetterController;
 use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\StaffAchievementController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Employee\CompetenceController;
@@ -51,6 +52,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/users/{user}/achievements', [AchievementController::class, 'store'])->name('achievements.store');
     Route::put('/achievements/{achievement}', [AchievementController::class, 'update'])->name('achievements.update');
     Route::delete('/achievements/{achievement}', [AchievementController::class, 'destroy'])->name('achievements.destroy');
+    Route::post('/users/{user}/staff-achievements', [StaffAchievementController::class, 'store'])->name('staff-achievements.store');
+    Route::put('/staff-achievements/{staffAchievement}', [StaffAchievementController::class, 'update'])->name('staff-achievements.update');
+    Route::delete('/staff-achievements/{staffAchievement}', [StaffAchievementController::class, 'destroy'])->name('staff-achievements.destroy');
 
     Route::prefix('leave')->name('leave.')->group(function () {
         Route::get('/', [LeaveApplicationController::class, 'index'])->name('index');
