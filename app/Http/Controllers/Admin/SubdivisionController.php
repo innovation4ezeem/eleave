@@ -25,10 +25,10 @@ class SubdivisionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'department_id' => ['required', 'integer', 'exists:departments,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'name'          => [
                 'required', 'string', 'max:100',
-                Rule::unique('subdivisions')->where('department_id', $request->department_id),
+                Rule::unique('subdivisions', 'name'),
             ],
         ]);
 
@@ -43,9 +43,7 @@ class SubdivisionController extends Controller
         $data = $request->validate([
             'name' => [
                 'required', 'string', 'max:100',
-                Rule::unique('subdivisions')
-                    ->where('department_id', $subdivision->department_id)
-                    ->ignore($subdivision->id),
+                Rule::unique('subdivisions', 'name')->ignore($subdivision->id),
             ],
         ]);
 
