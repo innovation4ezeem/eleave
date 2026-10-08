@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\Department;
+use App\Models\Subdivision;
 use App\Models\LeaveApplication;
 use App\Models\LeaveBalance;
 use App\Models\LeaveType;
@@ -141,9 +142,10 @@ class UserController extends Controller
         $leaveTypes = LeaveType::active()->orderBy('sort_order')->get();
         $entitledLeaveTypeIds = $user->entitledLeaveTypes()->pluck('leave_types.id')->all();
 
-        $user->load('subdivisions', 'department.subdivisions');
+        $user->load('subdivisions');
+        $allSubdivisions = Subdivision::with('department')->orderBy('name')->get();
 
-        return view('admin.users.edit', compact('user', 'departments', 'leaveTypes', 'entitledLeaveTypeIds'));
+        return view('admin.users.edit', compact('user', 'departments', 'leaveTypes', 'entitledLeaveTypeIds', 'allSubdivisions'));
     }
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
