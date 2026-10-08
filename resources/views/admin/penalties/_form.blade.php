@@ -52,8 +52,8 @@
         @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
-    {{-- Subdivision (shown for both modes) --}}
-    <div class="col-md-6 mb-3">
+    {{-- Subdivision (dept target only) --}}
+    <div class="col-md-6 mb-3" id="field_subdivision">
         <label for="subdivision_id" class="form-label">Subdivision <span class="text-muted small">(optional)</span></label>
         <select id="subdivision_id" name="subdivision_id" class="form-select @error('subdivision_id') is-invalid @enderror">
             <option value="">— whole department —</option>
@@ -169,6 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const isIndividual = document.getElementById('target_individual').checked;
         fieldEmployee.style.display   = isIndividual ? '' : 'none';
         fieldDepartment.style.display = isIndividual ? 'none' : '';
+        document.getElementById('field_subdivision').style.display = isIndividual ? 'none' : '';
         // clear required-like behaviour
         empSelect.required  = isIndividual;
         deptSelect.required = !isIndividual;
