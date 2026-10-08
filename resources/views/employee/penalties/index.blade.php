@@ -13,6 +13,7 @@
                 <thead>
                     <tr>
                         <th>Date</th>
+                        <th>Scope</th>
                         <th>Type</th>
                         <th>Level</th>
                         <th>Mistake</th>
@@ -25,6 +26,19 @@
                     @forelse ($penalties as $penalty)
                         <tr>
                             <td>{{ $penalty->penalty_date->format('d M Y') }}</td>
+                            <td>
+                                @if ($penalty->user_id)
+                                    <span class="badge bg-secondary">Personal</span>
+                                @elseif ($penalty->subdivision_id)
+                                    <span class="badge bg-info text-dark" title="{{ $penalty->department?->name }}">
+                                        {{ $penalty->subdivision?->name }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning text-dark" title="{{ $penalty->department?->name }}">
+                                        Dept-wide
+                                    </span>
+                                @endif
+                            </td>
                             <td><span class="badge {{ $penalty->typeBadgeClass() }}">{{ ucfirst($penalty->penalty_type) }}</span></td>
                             <td>{{ $penalty->levelLabel() }}</td>
                             <td>{{ $penalty->mistake }}</td>
@@ -40,7 +54,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">You have no penalties or warnings on record.</td>
+                            <td colspan="8" class="text-center text-muted py-4">You have no penalties or warnings on record.</td>
                         </tr>
                     @endforelse
                 </tbody>

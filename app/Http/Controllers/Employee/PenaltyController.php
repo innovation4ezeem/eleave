@@ -13,8 +13,28 @@ class PenaltyController extends Controller
 {
     public function index(Request $request): View
     {
-        $penalties = $request->user()->penalties()
-            ->with('createdBy')
+        $user = $request->user();
+
+        // Collect subdivision IDs this employee belongs to
+        $subdivisionIds = $user->subdivisions()->pluck('subdivisions.id')->toArray();
+
+        $penalties = Penalty::with(['department', 'subdivision', 'createdBy'])
+            ->where(function ($q) use ($user, $subdivisionIds) {
+                // Personal (targeted at this employee directly)
+                $q->where('user_id', $user->id)
+                  // OR dept-wide (no user, same department, no subdivision scope)
+                  ->orWhere(function ($q2) use ($user) {
+                      $q2->whereNull('user_id')
+                         ->where('department_id', $user->department_id)
+                         ->whereNull('subdivision_id');
+                  })
+                  // OR subdivision-scoped (employee is in that subdivision)
+                  ->orWhere(function ($q2) use ($user, $subdivisionIds) {
+                      $q2->whereNull('user_id')
+                         ->where('department_id', $user->department_id)
+                         ->whereIn('subdivision_id', $subdivisionIds);
+                  });
+            })
             ->orderByDesc('penalty_date')
             ->paginate(15);
 
