@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\PenaltyController as AdminPenaltyController;
 use App\Http\Controllers\Admin\PerformanceEntryController;
 use App\Http\Controllers\Admin\PerformanceSettingController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\SubdivisionController;
 use App\Http\Controllers\Admin\WarningLetterController as AdminWarningLetterController;
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\StaffAchievementController;
@@ -110,7 +111,13 @@ Route::middleware('auth')->group(function () {
             Route::resource('departments', DepartmentController::class)->except(['show']);
 
             // Leave entitlement tiers (years-of-service based quotas)
-            Route::get('/entitlement-tiers', [LeaveEntitlementTierController::class, 'index'])->name('entitlement-tiers.index');
+            // Subdivisions — scoped to a department
+            Route::get('/subdivisions', [SubdivisionController::class, 'index'])->name('subdivisions.index');
+            Route::post('/subdivisions', [SubdivisionController::class, 'store'])->name('subdivisions.store');
+            Route::put('/subdivisions/{subdivision}', [SubdivisionController::class, 'update'])->name('subdivisions.update');
+            Route::delete('/subdivisions/{subdivision}', [SubdivisionController::class, 'destroy'])->name('subdivisions.destroy');
+
+                        Route::get('/entitlement-tiers', [LeaveEntitlementTierController::class, 'index'])->name('entitlement-tiers.index');
             Route::post('/entitlement-tiers', [LeaveEntitlementTierController::class, 'store'])->name('entitlement-tiers.store');
             Route::get('/entitlement-tiers/{entitlementTier}/edit', [LeaveEntitlementTierController::class, 'edit'])->name('entitlement-tiers.edit');
             Route::put('/entitlement-tiers/{entitlementTier}', [LeaveEntitlementTierController::class, 'update'])->name('entitlement-tiers.update');

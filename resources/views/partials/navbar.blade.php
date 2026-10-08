@@ -50,7 +50,7 @@
 
                 @if (auth()->user()->isAdminOrHod())
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['admin.users.*', 'admin.departments.*', 'admin.penalties.*', 'admin.warning-letters.*', 'admin.entitlement-tiers.*', 'admin.leave-years.*']) ? 'active' : '' }}" href="#" id="navAdminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['admin.users.*', 'admin.departments.*', 'admin.subdivisions.*', 'admin.penalties.*', 'admin.warning-letters.*', 'admin.entitlement-tiers.*', 'admin.leave-years.*']) ? 'active' : '' }}" href="#" id="navAdminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Administration
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navAdminDropdown">
@@ -59,6 +59,7 @@
                             @if (auth()->user()->isAdmin())
                                 <li><a class="dropdown-item {{ request()->routeIs('admin.warning-letters.*') ? 'active' : '' }}" href="{{ route('admin.warning-letters.index') }}">Warning Letters</a></li>
                                 <li><a class="dropdown-item {{ request()->routeIs('admin.departments.*') ? 'active' : '' }}" href="{{ route('admin.departments.index') }}">Departments</a></li>
+                                <li><a class="dropdown-item {{ request()->routeIs('admin.subdivisions.*') ? 'active' : '' }}" href="{{ route('admin.subdivisions.index') }}">Subdivisions</a></li>
                                 <li><a class="dropdown-item {{ request()->routeIs('admin.entitlement-tiers.*') ? 'active' : '' }}" href="{{ route('admin.entitlement-tiers.index') }}">Entitlement Tiers</a></li>
                                 <li><a class="dropdown-item {{ request()->routeIs('admin.leave-years.*') ? 'active' : '' }}" href="{{ route('admin.leave-years.index') }}">Leave Years</a></li>
                             @endif

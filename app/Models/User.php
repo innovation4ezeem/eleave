@@ -80,6 +80,11 @@ class User extends Authenticatable
         return $this->hasMany(WarningLetter::class);
     }
 
+    public function subdivisions(): BelongsToMany
+    {
+        return $this->belongsToMany(Subdivision::class);
+    }
+
     public function workExperiences(): HasMany
     {
         return $this->hasMany(WorkExperience::class)

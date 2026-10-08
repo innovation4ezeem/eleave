@@ -27,6 +27,8 @@ class UpdateUserRequest extends FormRequest
             'joined_at' => ['nullable', 'date'],
             'leave_type_ids' => ['array'],
             'leave_type_ids.*' => ['integer', 'exists:leave_types,id'],
+            'subdivision_ids'   => ['array'],
+            'subdivision_ids.*' => ['integer', 'exists:subdivisions,id'],
         ];
     }
 }

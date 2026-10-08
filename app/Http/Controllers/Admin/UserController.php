@@ -71,7 +71,7 @@ class UserController extends Controller
             abort(403);
         }
 
-        $user->load('department', 'workExperiences', 'achievements');
+        $user->load('department', 'subdivisions', 'workExperiences', 'achievements', 'staffAchievements');
 
         $leaveYear = LeaveYear::current();
 
@@ -141,6 +141,8 @@ class UserController extends Controller
         $leaveTypes = LeaveType::active()->orderBy('sort_order')->get();
         $entitledLeaveTypeIds = $user->entitledLeaveTypes()->pluck('leave_types.id')->all();
 
+        $user->load('subdivisions', 'department.subdivisions');
+
         return view('admin.users.edit', compact('user', 'departments', 'leaveTypes', 'entitledLeaveTypeIds'));
     }
 
@@ -153,8 +155,9 @@ class UserController extends Controller
         $data = $request->validated();
 
         // Entitled leave types are admin-only; sync separately from the user attributes.
-        $leaveTypeIds = $data['leave_type_ids'] ?? null;
-        $data = Arr::except($data, ['leave_type_ids']);
+        $leaveTypeIds    = $data['leave_type_ids'] ?? null;
+        $subdivisionIds  = $data['subdivision_ids'] ?? [];
+        $data = Arr::except($data, ['leave_type_ids', 'subdivision_ids']);
 
         // HOD cannot change role or move employee to another department
         if (auth()->user()->isHod()) {
@@ -174,6 +177,11 @@ class UserController extends Controller
             foreach ($user->entitledLeaveTypes()->active()->get() as $leaveType) {
                 $this->leaveBalanceService->getOrCreateBalance($user, $leaveType, $leaveYear);
             }
+        }
+
+        // Sync subdivisions (admin only — HODs don't reassign teams)
+        if (auth()->user()->isAdmin()) {
+            $user->subdivisions()->sync($subdivisionIds);
         }
 
         return redirect()->route('admin.users.index')->with('success', 'User updated.');

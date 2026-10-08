@@ -147,6 +147,28 @@
                     </div>
                 @endif
 
+                <div class="mb-3">
+                    <label class="form-label">Subdivisions <span class="text-muted small">(optional — tick all that apply)</span></label>
+                    @if ($user->department && $user->department->subdivisions->isNotEmpty())
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach ($user->department->subdivisions as $sub)
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="subdivision_ids[]"
+                                           value="{{ $sub->id }}"
+                                           id="sub_{{ $sub->id }}"
+                                           {{ in_array($sub->id, old('subdivision_ids', $user->subdivisions->pluck('id')->toArray())) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="sub_{{ $sub->id }}">{{ $sub->name }}</label>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-muted small mb-0">No subdivisions set up for this department yet.
+                            <a href="{{ route('admin.subdivisions.index') }}">Manage subdivisions</a>
+                        </p>
+                    @endif
+                </div>
+
                 <button type="submit" class="btn btn-primary">Save Changes</button>
             </form>
 

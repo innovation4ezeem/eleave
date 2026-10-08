@@ -35,6 +35,15 @@
                 <dt class="col-sm-3">Designation</dt>
                 <dd class="col-sm-9">{{ $user->designation ?? '—' }}</dd>
 
+                <dt class="col-sm-3">Subdivisions</dt>
+                <dd class="col-sm-9">
+                    @forelse ($user->subdivisions as $sub)
+                        <span class="badge bg-secondary me-1">{{ $sub->name }}</span>
+                    @empty
+                        <span class="text-muted">—</span>
+                    @endforelse
+                </dd>
+
                 <dt class="col-sm-3">Joined At</dt>
                 <dd class="col-sm-9">{{ $user->joined_at?->format('d M Y') ?? '—' }}</dd>
 

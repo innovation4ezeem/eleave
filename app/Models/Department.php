@@ -34,4 +34,9 @@ class Department extends Model
     {
         return $this->hasMany(LeaveApplication::class);
     }
+
+    public function subdivisions(): HasMany
+    {
+        return $this->hasMany(Subdivision::class)->orderBy('name');
+    }
 }
