@@ -368,8 +368,8 @@ class WarningLetterTest extends TestCase
         $deptMate = $this->makeUser('employee', 1, 'Dept Mate');
         $outsider = $this->makeUser('employee', 2, 'Far Away');
         $noDept = $this->makeUser('employee', null, 'Nowhere Man');
-        $this->makeLetter($deptMate, $admin, ['level' => 'MateLevel', 'notes' => 'SECRET-NOTE-123']);
-        $this->makeLetter($hod, $admin, ['level' => 'HodOwnLevel']);
+        $mateLetter = $this->makeLetter($deptMate, $admin, ['level' => 'MateLevel', 'notes' => 'SECRET-NOTE-123']);
+        $ownLetter = $this->makeLetter($hod, $admin, ['level' => 'HodOwnLevel']);
         $this->makeLetter($outsider, $admin, ['level' => 'OutsiderLevel']);
         $this->makeLetter($noDept, $admin, ['level' => 'NoDeptLevel']);
 
@@ -381,6 +381,51 @@ class WarningLetterTest extends TestCase
 
         // Filtered in the query, not just hidden in the view.
         $this->assertCount(2, $response->viewData('letters')->items());
+
+        // A department member's letter: date and level only. No download link, no file name.
+        $response->assertDontSee(route('warning-letters.download', $mateLetter), false)
+            ->assertDontSee($mateLetter->original_filename);
+        // The HOD's own letter: a download link as for any employee (still no file name shown).
+        $response->assertSee(route('warning-letters.download', $ownLetter), false)
+            ->assertDontSee($ownLetter->original_filename);
+        $this->assertSame(1, substr_count($response->getContent(), '/download'));
+    }
+
+    public function test_hod_sees_date_and_level_but_gets_403_on_a_department_members_download(): void
+    {
+        $admin = $this->makeUser('admin', null);
+        $hod = $this->makeUser('hod', 1);
+        $deptMate = $this->makeUser('employee', 1, 'Dept Mate');
+        $mateLetter = $this->makeLetter($deptMate, $admin, ['issued_date' => '2026-09-03', 'level' => 'MateLevel']);
+        $ownLetter = $this->makeLetter($hod, $admin, ['issued_date' => '2026-09-04']);
+
+        $this->actingAs($hod)->get(route('warning-letters.index'))
+            ->assertOk()->assertSee('03 Sep 2026')->assertSee('MateLevel');
+
+        // Denied by the policy on the route itself, not just hidden in the list.
+        $this->actingAs($hod)->get(route('warning-letters.download', $mateLetter))->assertForbidden();
+        $this->assertFalse(Gate::forUser($hod)->allows('download', $mateLetter));
+        // ... but the HOD can still see the letter exists (list), and download their own.
+        $this->assertTrue(Gate::forUser($hod)->allows('view', $mateLetter));
+        $own = $this->actingAs($hod)->get(route('warning-letters.download', $ownLetter))->assertOk();
+        $this->assertSame(Storage::disk('local')->get($ownLetter->file_path), $own->streamedContent());
+        $this->assertTrue(Gate::forUser($hod)->allows('download', $ownLetter));
+
+        // The employee and the admin are unchanged.
+        $this->actingAs($deptMate)->get(route('warning-letters.download', $mateLetter))->assertOk();
+        $this->actingAs($admin)->get(route('warning-letters.download', $mateLetter))->assertOk();
+    }
+
+    public function test_employee_list_still_shows_a_download_link_for_every_own_letter(): void
+    {
+        $admin = $this->makeUser('admin', null);
+        $employee = $this->makeUser('employee', 1);
+        $one = $this->makeLetter($employee, $admin);
+        $two = $this->makeLetter($employee, $admin);
+
+        $this->actingAs($employee)->get(route('warning-letters.index'))->assertOk()
+            ->assertSee(route('warning-letters.download', $one), false)
+            ->assertSee(route('warning-letters.download', $two), false);
     }
 
     public function test_hod_without_a_department_only_matches_their_own_letters(): void
@@ -401,9 +446,15 @@ class WarningLetterTest extends TestCase
         $this->assertFalse(Gate::forUser($hod)->allows('view', $orphan));
         $this->assertFalse(Gate::forUser($hod)->allows('view', $other));
         $this->actingAs($hod)->get(route('warning-letters.download', $orphan))->assertForbidden();
+        $this->actingAs($hod)->get(route('warning-letters.download', $other))->assertForbidden();
+
+        // Their own letter can still be downloaded, with no department at all.
+        $this->assertTrue(Gate::forUser($hod)->allows('download', $own));
+        $this->assertFalse(Gate::forUser($hod)->allows('download', $orphan));
+        $this->actingAs($hod)->get(route('warning-letters.download', $own))->assertOk();
     }
 
-    public function test_letters_of_a_deactivated_employee_stay_visible_to_admin_and_department_hod(): void
+    public function test_letters_of_a_deactivated_employee_are_listed_for_admin_and_department_hod_but_only_admin_downloads(): void
     {
         $admin = $this->makeUser('admin', null);
         $hod = $this->makeUser('hod', 1);
@@ -414,7 +465,8 @@ class WarningLetterTest extends TestCase
         $this->assertFalse($gone->isActive());
         $this->actingAs($admin)->get(route('admin.warning-letters.index'))->assertOk()->assertSee('FormerLevel');
         $this->actingAs($hod)->get(route('warning-letters.index'))->assertOk()->assertSee('FormerLevel');
-        $this->actingAs($hod)->get(route('warning-letters.download', $letter))->assertOk();
+        $this->actingAs($hod)->get(route('warning-letters.download', $letter))->assertForbidden();
+        $this->actingAs($admin)->get(route('warning-letters.download', $letter))->assertOk();
     }
 
     public function test_admin_visiting_the_read_only_list_is_sent_to_the_admin_list(): void
@@ -433,14 +485,18 @@ class WarningLetterTest extends TestCase
         $hod = $this->makeUser('hod', 1);
         $employee = $this->makeUser('employee', 1);
         $letter = $this->makeLetter($employee, $admin, ['original_filename' => 'Final Notice.pdf']);
-        $expected = Storage::disk('local')->get($letter->file_path);
+        $hodLetter = $this->makeLetter($hod, $admin, ['original_filename' => 'Hod Notice.pdf']);
 
-        foreach ([$admin, $hod, $employee] as $user) {
-            $response = $this->actingAs($user)->get(route('warning-letters.download', $letter));
-            $response->assertOk()->assertDownload('Final Notice.pdf');
+        // Admin: any letter. Employee: their own. HOD: their own.
+        $allowed = [[$admin, $letter, 'Final Notice.pdf'], [$employee, $letter, 'Final Notice.pdf'],
+            [$admin, $hodLetter, 'Hod Notice.pdf'], [$hod, $hodLetter, 'Hod Notice.pdf']];
+
+        foreach ($allowed as [$user, $row, $name]) {
+            $response = $this->actingAs($user)->get(route('warning-letters.download', $row));
+            $response->assertOk()->assertDownload($name);
             $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
             $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
-            $this->assertSame($expected, $response->streamedContent());
+            $this->assertSame(Storage::disk('local')->get($row->file_path), $response->streamedContent());
         }
     }
 
@@ -450,10 +506,14 @@ class WarningLetterTest extends TestCase
         $employee = $this->makeUser('employee', 1);
         $stranger = $this->makeUser('employee', 1);
         $otherDeptHod = $this->makeUser('hod', 2);
+        $sameDeptHod = $this->makeUser('hod', 1);
         $letter = $this->makeLetter($employee, $admin);
 
         $this->actingAs($stranger)->get(route('warning-letters.download', $letter))->assertForbidden();
         $this->actingAs($otherDeptHod)->get(route('warning-letters.download', $letter))->assertForbidden();
+        // A HOD cannot download another employee's letter even in their own department.
+        $this->actingAs($sameDeptHod)->get(route('warning-letters.download', $letter))->assertForbidden();
+        $this->assertSame(0, WarningLetterEvent::count());
     }
 
     public function test_download_requires_login(): void
@@ -594,15 +654,18 @@ class WarningLetterTest extends TestCase
         $employee = $this->makeUser('employee', 1);
         $stranger = $this->makeUser('employee', 2);
         $letter = $this->makeLetter($employee, $admin);
+        $hodLetter = $this->makeLetter($hod, $admin);
 
-        foreach ([$admin, $hod, $employee] as $user) {
-            $this->actingAs($user)->get(route('warning-letters.download', $letter))->assertOk();
-        }
+        $this->actingAs($admin)->get(route('warning-letters.download', $letter))->assertOk();
+        $this->actingAs($hod)->get(route('warning-letters.download', $hodLetter))->assertOk();
+        $this->actingAs($employee)->get(route('warning-letters.download', $letter))->assertOk();
+        // Denied downloads (a stranger, and the HOD on a department member's letter) are not logged.
         $this->actingAs($stranger)->get(route('warning-letters.download', $letter))->assertForbidden();
+        $this->actingAs($hod)->get(route('warning-letters.download', $letter))->assertForbidden();
 
         $events = WarningLetterEvent::where('action', 'downloaded')->orderBy('id')->get();
         $this->assertSame([$admin->id, $hod->id, $employee->id], $events->pluck('user_id')->all());
-        $this->assertSame([$letter->id], $events->pluck('warning_letter_id')->unique()->values()->all());
+        $this->assertSame([$letter->id, $hodLetter->id, $letter->id], $events->pluck('warning_letter_id')->all());
         $this->assertSame(3, WarningLetterEvent::count());
 
         Storage::disk('local')->delete($letter->file_path);

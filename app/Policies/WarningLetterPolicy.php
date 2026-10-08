@@ -47,9 +47,13 @@ class WarningLetterPolicy
         return false;
     }
 
+    /**
+     * Admins may download any letter; everyone else only their own. A HOD can SEE a department
+     * member's letter in the list (view) but cannot download it.
+     */
     public function download(User $user, WarningLetter $warningLetter): bool
     {
-        return $this->view($user, $warningLetter);
+        return $user->isAdmin() || $warningLetter->user_id === $user->id;
     }
 
     public function create(User $user): bool

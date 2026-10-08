@@ -145,8 +145,10 @@ server's installed dependencies. Also do not upload `tests/` or `docs/`.
    exists under `storage/app/private/warning-letters/` with a random name.
 2. As the **employee**: E-Leave > My Warning Letters shows only that letter. Download works. The
    admin notes are not visible anywhere.
-3. As the employee's **HOD**: E-Leave > Warning Letters shows the letter. As a HOD of another
-   department it does not appear, and its download URL returns 403.
+3. As the employee's **HOD**: E-Leave > Warning Letters shows the letter's date and level only, with
+   no download link and no file name, and its download URL returns 403. A letter issued to the HOD
+   themselves shows a Download link and downloads. As a HOD of another department the employee's
+   letter does not appear at all.
 4. As a **non-admin**, open `/admin/warning-letters/create`: it must return 403.
 5. Edit the test letter (change the level, replace the file), then delete it. Delete is a soft
    delete: the row stays in the table with `deleted_at` set, and the file stays on disk.
@@ -162,10 +164,11 @@ server's installed dependencies. Also do not upload `tests/` or `docs/`.
 | Role | List | Download | Issue / edit / delete |
 |---|---|---|---|
 | Admin | all letters | any | yes |
-| HOD | own letters + letters of employees in own department | same set | no (403) |
+| HOD | own letters (with download) + letters of employees in own department (date and level only) | own letters only; a department member's download URL returns 403 | no (403) |
 | Employee | own letters | own | no (403) |
 
-A user or HOD with no department never matches the department rule. The HOD list is filtered in
+A user or HOD with no department never matches the department rule (that rule now only decides
+which letters appear in the HOD list). The HOD list is filtered in
 the database query, not only in the view. The admin-only `notes` field is never loaded for the
 HOD/employee list and is hidden from serialisation. The audit history is admin-only
 (`viewHistory` in the policy, plus the admin-only route); downloads by HODs and employees are

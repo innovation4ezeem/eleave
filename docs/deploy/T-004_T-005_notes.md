@@ -9,8 +9,9 @@ New table `warning_letters` (`user_id`, `issued_date`, `level` string, `notes` a
 file with `original_filename` / `mime_type` / `file_size`, `uploaded_by`, timestamps, softDeletes).
 `WarningLetterPolicy` enforces:
 - Admin: view all, create, edit, delete.
-- HOD: view-only for employees in the HOD's own department plus their own letters (null-department
-  safe, filtered in the query).
+- HOD: sees employees in the HOD's own department in the list (date and level only, no download link,
+  no file name; the download URL returns 403) plus their own letters, which they can download
+  (null-department safe, filtered in the query).
 - Employee: view-only for their own letters.
 
 Files live on the private `local` disk under `warning-letters`, downloaded only through a
