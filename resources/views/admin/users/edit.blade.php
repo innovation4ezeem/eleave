@@ -149,11 +149,15 @@
 
                 <div class="mb-3">
                     <label class="form-label">Subdivisions <span class="text-muted small">(optional — tick all that apply)</span></label>
-                    @if ($allSubdivisions->isNotEmpty())
-                        @php
-                            $checkedIds = old('subdivision_ids', $user->subdivisions->pluck('id')->toArray());
-                            $grouped = $allSubdivisions->groupBy(fn($s) => $s->department?->name ?? 'General / Cross-Department');
-                        @endphp
+                    @php
+                        $checkedIds = old('subdivision_ids', $user->subdivisions->pluck('id')->toArray());
+                        // Show: subdivisions matching this employee's dept + all cross-dept (null dept)
+                        $visibleSubs = $allSubdivisions->filter(
+                            fn($s) => is_null($s->department_id) || $s->department_id === $user->department_id
+                        );
+                        $grouped = $visibleSubs->groupBy(fn($s) => $s->department?->name ?? 'General / Cross-Department');
+                    @endphp
+                    @if ($visibleSubs->isNotEmpty())
                         @foreach ($grouped as $groupName => $subs)
                             <p class="text-muted small mb-1 mt-2">{{ $groupName }}</p>
                             <div class="d-flex flex-wrap gap-2 mb-1">
@@ -170,7 +174,7 @@
                             </div>
                         @endforeach
                     @else
-                        <p class="text-muted small mb-0">No subdivisions set up yet.
+                        <p class="text-muted small mb-0">No subdivisions available for this employee's department.
                             <a href="{{ route('admin.subdivisions.index') }}">Manage subdivisions</a>
                         </p>
                     @endif
