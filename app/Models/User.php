@@ -75,6 +75,11 @@ class User extends Authenticatable
         return $this->hasMany(Penalty::class);
     }
 
+    public function warningLetters(): HasMany
+    {
+        return $this->hasMany(WarningLetter::class);
+    }
+
     public function workExperiences(): HasMany
     {
         return $this->hasMany(WorkExperience::class)

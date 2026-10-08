@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\PenaltyController as AdminPenaltyController;
 use App\Http\Controllers\Admin\PerformanceEntryController;
 use App\Http\Controllers\Admin\PerformanceSettingController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WarningLetterController as AdminWarningLetterController;
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Employee\LeaveReportController;
 use App\Http\Controllers\Employee\PenaltyController as EmployeePenaltyController;
 use App\Http\Controllers\Employee\PerformanceController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WarningLetterController;
 use App\Http\Controllers\WorkExperienceController;
 use Illuminate\Support\Facades\Route;
 
@@ -67,6 +69,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/penalties', [EmployeePenaltyController::class, 'index'])->name('penalties.index');
     Route::get('/penalties/{penalty}/document', [EmployeePenaltyController::class, 'downloadDocument'])->name('penalties.document');
 
+    // Warning letters — read-only list (employee: own, HOD: own + department) and the one
+    // download route for every role. Access is decided by WarningLetterPolicy, not by the menu.
+    Route::get('/warning-letters', [WarningLetterController::class, 'index'])->name('warning-letters.index');
+    Route::get('/warning-letters/{warningLetter}/download', [WarningLetterController::class, 'download'])->name('warning-letters.download');
+
     // Personal Competence (peer voting) — any logged-in user
     Route::get('/competence', [CompetenceController::class, 'index'])->name('competence.index');
     Route::post('/competence/vote', [CompetenceController::class, 'vote'])->name('competence.vote');
@@ -101,6 +108,16 @@ Route::middleware('auth')->group(function () {
             Route::get('/entitlement-tiers/{entitlementTier}/edit', [LeaveEntitlementTierController::class, 'edit'])->name('entitlement-tiers.edit');
             Route::put('/entitlement-tiers/{entitlementTier}', [LeaveEntitlementTierController::class, 'update'])->name('entitlement-tiers.update');
             Route::delete('/entitlement-tiers/{entitlementTier}', [LeaveEntitlementTierController::class, 'destroy'])->name('entitlement-tiers.destroy');
+
+            // Warning letters — only admins issue, edit or delete ('create' before the wildcard routes).
+            Route::prefix('warning-letters')->name('warning-letters.')->group(function () {
+                Route::get('/', [AdminWarningLetterController::class, 'index'])->name('index');
+                Route::get('/create', [AdminWarningLetterController::class, 'create'])->name('create');
+                Route::post('/', [AdminWarningLetterController::class, 'store'])->name('store');
+                Route::get('/{warningLetter}/edit', [AdminWarningLetterController::class, 'edit'])->name('edit');
+                Route::put('/{warningLetter}', [AdminWarningLetterController::class, 'update'])->name('update');
+                Route::delete('/{warningLetter}', [AdminWarningLetterController::class, 'destroy'])->name('destroy');
+            });
 
             // Leave-year archive / locks
             Route::get('/leave-years', [LeaveYearController::class, 'index'])->name('leave-years.index');

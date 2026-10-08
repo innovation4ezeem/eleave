@@ -1,0 +1,104 @@
+diff --git a/app/Models/User.php b/app/Models/User.php
+index dde3be8..6d7dbac 100644
+--- a/app/Models/User.php
++++ b/app/Models/User.php
+@@ -75,6 +75,11 @@ public function penalties(): HasMany
+         return $this->hasMany(Penalty::class);
+     }
+ 
++    public function warningLetters(): HasMany
++    {
++        return $this->hasMany(WarningLetter::class);
++    }
++
+     public function workExperiences(): HasMany
+     {
+         return $this->hasMany(WorkExperience::class)
+diff --git a/resources/views/partials/navbar.blade.php b/resources/views/partials/navbar.blade.php
+index 2ab7110..386ef6e 100644
+--- a/resources/views/partials/navbar.blade.php
++++ b/resources/views/partials/navbar.blade.php
+@@ -11,7 +11,7 @@
+                 </li>
+ 
+                 <li class="nav-item dropdown">
+-                    <a class="nav-link dropdown-toggle {{ request()->routeIs(['leave.*', 'balances.*', 'admin.applications.*', 'admin.historical.*']) ? 'active' : '' }}" href="#" id="navLeaveDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
++                    <a class="nav-link dropdown-toggle {{ request()->routeIs(['leave.*', 'balances.*', 'warning-letters.*', 'admin.applications.*', 'admin.historical.*']) ? 'active' : '' }}" href="#" id="navLeaveDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                         E-Leave
+                     </a>
+                     <ul class="dropdown-menu" aria-labelledby="navLeaveDropdown">
+@@ -19,6 +19,9 @@
+                         <li><a class="dropdown-item {{ request()->routeIs('balances.*') ? 'active' : '' }}" href="{{ route('balances.index') }}">My Balances</a></li>
+                         <li><a class="dropdown-item {{ request()->routeIs('leave.report') ? 'active' : '' }}" href="{{ route('leave.report') }}">Leave Report</a></li>
+                         <li><a class="dropdown-item {{ request()->routeIs('penalties.index') ? 'active' : '' }}" href="{{ route('penalties.index') }}">My Penalties</a></li>
++                        @unless (auth()->user()->isAdmin())
++                            <li><a class="dropdown-item {{ request()->routeIs('warning-letters.*') ? 'active' : '' }}" href="{{ route('warning-letters.index') }}">{{ auth()->user()->isHod() ? 'Warning Letters' : 'My Warning Letters' }}</a></li>
++                        @endunless
+                         @if (auth()->user()->isAdminOrHod())
+                             <li><hr class="dropdown-divider"></li>
+                             <li><a class="dropdown-item {{ request()->routeIs('admin.applications.*') ? 'active' : '' }}" href="{{ route('admin.applications.index') }}">Leave Applications</a></li>
+@@ -47,13 +50,14 @@
+ 
+                 @if (auth()->user()->isAdminOrHod())
+                     <li class="nav-item dropdown">
+-                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['admin.users.*', 'admin.departments.*', 'admin.penalties.*', 'admin.entitlement-tiers.*', 'admin.leave-years.*']) ? 'active' : '' }}" href="#" id="navAdminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
++                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['admin.users.*', 'admin.departments.*', 'admin.penalties.*', 'admin.warning-letters.*', 'admin.entitlement-tiers.*', 'admin.leave-years.*']) ? 'active' : '' }}" href="#" id="navAdminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                             Administration
+                         </a>
+                         <ul class="dropdown-menu" aria-labelledby="navAdminDropdown">
+                             <li><a class="dropdown-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">Users</a></li>
+                             <li><a class="dropdown-item {{ request()->routeIs('admin.penalties.*') ? 'active' : '' }}" href="{{ route('admin.penalties.index') }}">Penalties</a></li>
+                             @if (auth()->user()->isAdmin())
++                                <li><a class="dropdown-item {{ request()->routeIs('admin.warning-letters.*') ? 'active' : '' }}" href="{{ route('admin.warning-letters.index') }}">Warning Letters</a></li>
+                                 <li><a class="dropdown-item {{ request()->routeIs('admin.departments.*') ? 'active' : '' }}" href="{{ route('admin.departments.index') }}">Departments</a></li>
+                                 <li><a class="dropdown-item {{ request()->routeIs('admin.entitlement-tiers.*') ? 'active' : '' }}" href="{{ route('admin.entitlement-tiers.index') }}">Entitlement Tiers</a></li>
+                                 <li><a class="dropdown-item {{ request()->routeIs('admin.leave-years.*') ? 'active' : '' }}" href="{{ route('admin.leave-years.index') }}">Leave Years</a></li>
+diff --git a/routes/web.php b/routes/web.php
+index abfdd0e..3fc6df2 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -12,6 +12,7 @@
+ use App\Http\Controllers\Admin\PerformanceEntryController;
+ use App\Http\Controllers\Admin\PerformanceSettingController;
+ use App\Http\Controllers\Admin\UserController;
++use App\Http\Controllers\Admin\WarningLetterController as AdminWarningLetterController;
+ use App\Http\Controllers\AchievementController;
+ use App\Http\Controllers\Auth\AuthenticatedSessionController;
+ use App\Http\Controllers\DashboardController;
+@@ -22,6 +23,7 @@
+ use App\Http\Controllers\Employee\PenaltyController as EmployeePenaltyController;
+ use App\Http\Controllers\Employee\PerformanceController;
+ use App\Http\Controllers\ProfileController;
++use App\Http\Controllers\WarningLetterController;
+ use App\Http\Controllers\WorkExperienceController;
+ use Illuminate\Support\Facades\Route;
+ 
+@@ -67,6 +69,11 @@
+     Route::get('/penalties', [EmployeePenaltyController::class, 'index'])->name('penalties.index');
+     Route::get('/penalties/{penalty}/document', [EmployeePenaltyController::class, 'downloadDocument'])->name('penalties.document');
+ 
++    // Warning letters — read-only list (employee: own, HOD: own + department) and the one
++    // download route for every role. Access is decided by WarningLetterPolicy, not by the menu.
++    Route::get('/warning-letters', [WarningLetterController::class, 'index'])->name('warning-letters.index');
++    Route::get('/warning-letters/{warningLetter}/download', [WarningLetterController::class, 'download'])->name('warning-letters.download');
++
+     // Personal Competence (peer voting) — any logged-in user
+     Route::get('/competence', [CompetenceController::class, 'index'])->name('competence.index');
+     Route::post('/competence/vote', [CompetenceController::class, 'vote'])->name('competence.vote');
+@@ -102,6 +109,16 @@
+             Route::put('/entitlement-tiers/{entitlementTier}', [LeaveEntitlementTierController::class, 'update'])->name('entitlement-tiers.update');
+             Route::delete('/entitlement-tiers/{entitlementTier}', [LeaveEntitlementTierController::class, 'destroy'])->name('entitlement-tiers.destroy');
+ 
++            // Warning letters — only admins issue, edit or delete ('create' before the wildcard routes).
++            Route::prefix('warning-letters')->name('warning-letters.')->group(function () {
++                Route::get('/', [AdminWarningLetterController::class, 'index'])->name('index');
++                Route::get('/create', [AdminWarningLetterController::class, 'create'])->name('create');
++                Route::post('/', [AdminWarningLetterController::class, 'store'])->name('store');
++                Route::get('/{warningLetter}/edit', [AdminWarningLetterController::class, 'edit'])->name('edit');
++                Route::put('/{warningLetter}', [AdminWarningLetterController::class, 'update'])->name('update');
++                Route::delete('/{warningLetter}', [AdminWarningLetterController::class, 'destroy'])->name('destroy');
++            });
++
+             // Leave-year archive / locks
+             Route::get('/leave-years', [LeaveYearController::class, 'index'])->name('leave-years.index');
+             Route::post('/leave-years/{leaveYear}/lock', [LeaveYearController::class, 'lock'])->name('leave-years.lock');
