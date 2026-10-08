@@ -60,7 +60,7 @@
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Employee</th>
+                        <th>Target</th>
                         <th>Type</th>
                         <th>Level</th>
                         <th>Charges</th>
@@ -73,7 +73,16 @@
                     @forelse ($penalties as $penalty)
                         <tr>
                             <td>{{ $penalty->penalty_date->format('d M Y') }}</td>
-                            <td>{{ $penalty->user?->name ?? '(Deleted)' }}</td>
+                            <td>
+                                @if ($penalty->user_id)
+                                    {{ $penalty->user?->name ?? '(Deleted)' }}
+                                @else
+                                    <span class="text-muted small">Dept:</span> {{ $penalty->department?->name ?? '—' }}
+                                    @if ($penalty->subdivision)
+                                        <span class="text-muted small">/ {{ $penalty->subdivision->name }}</span>
+                                    @endif
+                                @endif
+                            </td>
                             <td><span class="badge {{ $penalty->typeBadgeClass() }}">{{ ucfirst($penalty->penalty_type) }}</span></td>
                             <td>{{ $penalty->levelLabel() }}</td>
                             <td>{{ $penalty->isCash() ? 'RM '.number_format((float) $penalty->penalty_charges, 2) : '—' }}</td>

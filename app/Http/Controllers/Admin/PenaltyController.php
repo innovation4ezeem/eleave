@@ -20,7 +20,7 @@ class PenaltyController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Penalty::with(['user' => fn ($q) => $q->withTrashed(), 'department', 'createdBy']);
+        $query = Penalty::with(['user' => fn ($q) => $q->withTrashed(), 'department', 'subdivision', 'createdBy']);
 
         // HOD only sees their own department's penalties
         if (auth()->user()->isHod()) {
