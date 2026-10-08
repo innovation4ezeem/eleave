@@ -5,6 +5,9 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">My Profile</h1>
+        @if ($user->warningLetters()->exists())
+            <a href="{{ route('warning-letters.index') }}" class="btn btn-outline-danger btn-sm">Warning Letters</a>
+        @endif
     </div>
 
     <div class="row">
@@ -109,7 +112,7 @@
                                         <td class="ps-3">{{ $letter->issued_date->format('d M Y') }}</td>
                                         <td>{{ $letter->level }}</td>
                                         <td>
-                                            <a href="{{ route('warning-letters.download', $letter) }}">Download</a>
+                                            <a href="{{ route('warning-letters.preview', $letter) }}" target="_blank">View</a>
                                         </td>
                                     </tr>
                                 @endforeach

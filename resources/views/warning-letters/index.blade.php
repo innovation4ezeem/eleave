@@ -9,7 +9,7 @@
     </div>
 
     @if ($isHod)
-        <p class="text-muted">Warning letters for employees in your department (date and level only), and your own (with download).</p>
+        <p class="text-muted">Warning letters for employees in your department (date and level only), and your own (with view).</p>
     @endif
 
     <div class="card">
@@ -40,7 +40,7 @@
                             <td>{{ $letter->level }}</td>
                             <td>
                                 @can('download', $letter)
-                                    <a href="{{ route('warning-letters.download', $letter) }}">Download</a>
+                                    <a href="{{ route('warning-letters.preview', $letter) }}" target="_blank">View</a>
                                 @else
                                     &mdash;
                                 @endcan

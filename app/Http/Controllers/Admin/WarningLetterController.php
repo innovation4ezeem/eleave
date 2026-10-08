@@ -185,8 +185,37 @@ class WarningLetterController extends Controller
     private function changedFields(WarningLetter $letter): array
     {
         $labels = ['user_id' => 'employee', 'issued_date' => 'issued_date', 'level' => 'level', 'notes' => 'notes'];
+        $dirty  = array_intersect_key($labels, $letter->getDirty());
+        $parts  = [];
 
-        return array_values(array_intersect_key($labels, $letter->getDirty()));
+        foreach ($dirty as $field => $label) {
+            $old = $letter->getOriginal($field);
+            $new = $letter->getAttribute($field);
+
+            // Cast dates to string for display
+            if ($old instanceof \Illuminate\Support\Carbon || $old instanceof \Carbon\Carbon) {
+                $old = $old->format('d M Y');
+            }
+            if ($new instanceof \Illuminate\Support\Carbon || $new instanceof \Carbon\Carbon) {
+                $new = $new->format('d M Y');
+            }
+
+            // Resolve user_id to a name
+            if ($field === 'user_id') {
+                $old = \App\Models\User::find($old)?->name ?? $old;
+                $new = \App\Models\User::find($new)?->name ?? $new;
+            }
+
+            // Truncate notes to keep the log readable
+            if ($field === 'notes') {
+                $old = $old ? mb_strimwidth($old, 0, 60, '...') : '(empty)';
+                $new = $new ? mb_strimwidth($new, 0, 60, '...') : '(empty)';
+            }
+
+            $parts[] = "{$label}: \"{$old}\" -> \"{$new}\"";
+        }
+
+        return $parts;
     }
 
     private function replacedPath(string $oldPath): string

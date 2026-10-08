@@ -35,7 +35,7 @@
         <input type="file" id="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png" {{ isset($warningLetter) ? '' : 'required' }}>
         <div class="form-text">PDF, JPG or PNG, max {{ number_format(config('warning_letters.max_kb', 5120) / 1024, 0) }}MB.
             @if (isset($warningLetter))
-                Current: <a href="{{ route('warning-letters.download', $warningLetter) }}">{{ $warningLetter->original_filename }}</a> (upload to replace)
+                Current: <a href="{{ route('warning-letters.preview', $warningLetter) }}" target="_blank">{{ $warningLetter->original_filename }}</a> (upload to replace)
             @endif
         </div>
         @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror

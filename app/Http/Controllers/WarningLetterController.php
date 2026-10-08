@@ -72,4 +72,24 @@ class WarningLetterController extends Controller
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
+
+    public function preview(Request $request, WarningLetter $warningLetter): StreamedResponse
+    {
+        $this->authorize('download', $warningLetter);
+
+        $disk = Storage::disk(config('warning_letters.disk', 'local'));
+
+        if (! $disk->exists($warningLetter->file_path)) {
+            abort(404);
+        }
+
+        // Log the same as a download.
+        WarningLetterEvent::record($warningLetter, $request->user(), WarningLetterEvent::DOWNLOADED);
+
+        return $disk->response($warningLetter->file_path, $warningLetter->original_filename, [
+            'Content-Type'        => $warningLetter->mime_type,
+            'Content-Disposition' => 'inline; filename="' . $warningLetter->original_filename . '"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
 }

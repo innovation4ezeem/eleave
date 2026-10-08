@@ -47,7 +47,7 @@
                             <td>{{ $letter->issued_date->format('d M Y') }}</td>
                             <td>{{ $letter->employee?->name ?? '(Deleted)' }}</td>
                             <td>{{ $letter->level }}</td>
-                            <td><a href="{{ route('warning-letters.download', $letter) }}">{{ $letter->original_filename }}</a></td>
+                            <td><a href="{{ route('warning-letters.preview', $letter) }}" target="_blank">{{ $letter->original_filename }}</a></td>
                             <td>{{ $letter->uploader?->name ?? '—' }}</td>
                             <td class="text-end">
                                 <a href="{{ route('admin.warning-letters.edit', $letter) }}" class="btn btn-sm btn-outline-secondary">Edit</a>

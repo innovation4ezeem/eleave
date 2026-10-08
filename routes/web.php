@@ -78,6 +78,7 @@ Route::middleware('auth')->group(function () {
     // download route for every role. Access is decided by WarningLetterPolicy, not by the menu.
     Route::get('/warning-letters', [WarningLetterController::class, 'index'])->name('warning-letters.index');
     Route::get('/warning-letters/{warningLetter}/download', [WarningLetterController::class, 'download'])->name('warning-letters.download');
+    Route::get('/warning-letters/{warningLetter}/preview', [WarningLetterController::class, 'preview'])->name('warning-letters.preview');
 
     // Personal Competence (peer voting) — any logged-in user
     Route::get('/competence', [CompetenceController::class, 'index'])->name('competence.index');

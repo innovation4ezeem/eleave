@@ -6,6 +6,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">{{ $user->name }}</h1>
         <div>
+            <a href="{{ route('admin.warning-letters.index') }}?user_id={{ $user->id }}" class="btn btn-outline-secondary btn-sm">Warning Letters</a>
             <a href="{{ route('admin.users.balances.edit', $user) }}" class="btn btn-outline-secondary btn-sm">Manage Balances</a>
             <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-outline-secondary btn-sm">Edit User</a>
             <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary btn-sm">Back to Users</a>
@@ -50,10 +51,13 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-4">
             @include('partials.work-experiences', ['profileUser' => $user])
         </div>
-        <div class="col-lg-6">
+        <div class="col-lg-4">
+            @include('partials.staff-achievements', ['profileUser' => $user])
+        </div>
+        <div class="col-lg-4">
             @include('partials.achievements', ['profileUser' => $user])
         </div>
     </div>
