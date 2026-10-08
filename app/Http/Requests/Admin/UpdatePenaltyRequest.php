@@ -23,6 +23,7 @@ class UpdatePenaltyRequest extends FormRequest
             'document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'reported_by' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string', 'max:2000'],
+            'subdivision_id' => ['nullable', 'integer', 'exists:subdivisions,id'],
         ];
     }
 }

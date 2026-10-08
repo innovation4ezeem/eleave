@@ -65,7 +65,11 @@ class PenaltyController extends Controller
     {
         $employees = $this->employeeList();
 
-        return view('admin.penalties.create', compact('employees'));
+        $subdivisions = \App\Models\Subdivision::orderBy('name')
+            ->get()
+            ->groupBy('department_id');
+
+        return view('admin.penalties.create', compact('employees', 'subdivisions'));
     }
 
     public function store(StorePenaltyRequest $request): RedirectResponse
@@ -78,6 +82,7 @@ class PenaltyController extends Controller
         $penalty = new Penalty([
             'user_id' => $user->id,
             'department_id' => $user->department_id,
+            'subdivision_id' => $data['subdivision_id'] ?? null,
             'penalty_date' => $data['penalty_date'],
             'mistake' => $data['mistake'],
             'penalty_type' => $data['penalty_type'],
@@ -106,7 +111,7 @@ class PenaltyController extends Controller
     {
         $this->authorizeDept($penalty->department_id);
 
-        $penalty->load(['user' => fn ($q) => $q->withTrashed(), 'department', 'createdBy', 'collectedBy']);
+        $penalty->load(['user' => fn ($q) => $q->withTrashed(), 'department', 'subdivision', 'createdBy', 'collectedBy']);
 
         return view('admin.penalties.show', compact('penalty'));
     }
@@ -117,7 +122,11 @@ class PenaltyController extends Controller
 
         $employees = $this->employeeList();
 
-        return view('admin.penalties.edit', compact('penalty', 'employees'));
+        $subdivisions = \App\Models\Subdivision::orderBy('name')
+            ->get()
+            ->groupBy('department_id');
+
+        return view('admin.penalties.edit', compact('penalty', 'employees', 'subdivisions'));
     }
 
     public function update(UpdatePenaltyRequest $request, Penalty $penalty): RedirectResponse
@@ -134,6 +143,7 @@ class PenaltyController extends Controller
         $penalty->fill([
             'user_id' => $user->id,
             'department_id' => $user->department_id,
+            'subdivision_id' => $data['subdivision_id'] ?? null,
             'penalty_date' => $data['penalty_date'],
             'mistake' => $data['mistake'],
             'penalty_type' => $data['penalty_type'],

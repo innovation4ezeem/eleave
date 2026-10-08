@@ -20,7 +20,7 @@
                         <dd class="col-sm-8">{{ $penalty->user?->name ?? '(Deleted)' }}@if ($penalty->user?->employee_no) ({{ $penalty->user->employee_no }})@endif</dd>
 
                         <dt class="col-sm-4">Department</dt>
-                        <dd class="col-sm-8">{{ $penalty->department?->name ?? '—' }}</dd>
+                        <dd class="col-sm-8">{{ $penalty->department?->name ?? '—' }}{{ $penalty->subdivision ? ' / ' . $penalty->subdivision->name : '' }}</dd>
 
                         <dt class="col-sm-4">Date</dt>
                         <dd class="col-sm-8">{{ $penalty->penalty_date->format('d M Y') }}</dd>

@@ -13,6 +13,18 @@
     </div>
 
     <div class="col-md-6 mb-3">
+        <label for="subdivision_id" class="form-label">Subdivision <span class="text-muted small">(optional)</span></label>
+        <select id="subdivision_id" name="subdivision_id" class="form-select @error('subdivision_id') is-invalid @enderror">
+            <option value="">— whole department —</option>
+            {{-- populated by JS based on selected employee --}}
+            @if (isset($penalty) && $penalty->subdivision_id)
+                <option value="{{ $penalty->subdivision_id }}" selected>{{ $penalty->subdivision?->name }}</option>
+            @endif
+        </select>
+        @error('subdivision_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    </div>
+
+    <div class="col-md-6 mb-3">
         <label for="penalty_date" class="form-label">Date</label>
         <input type="date" id="penalty_date" name="penalty_date" value="{{ old('penalty_date', isset($penalty) ? $penalty->penalty_date->format('Y-m-d') : now()->format('Y-m-d')) }}" class="form-control @error('penalty_date') is-invalid @enderror" required>
         @error('penalty_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -76,7 +88,40 @@
 
 @push('scripts')
     <script>
+        // Subdivisions map: department_id -> [{id, name}]
+        const subdivisionMap = @json($subdivisions->map(fn ($subs) => $subs->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])));
+
+        // Employee -> department map
+        const employeeDeptMap = {};
+        @foreach ($employees as $emp)
+            employeeDeptMap[{{ $emp->id }}] = {{ $emp->department_id ?? 'null' }};
+        @endforeach
+
+        function updateSubdivisions(deptId, selectedId) {
+            const select = document.getElementById('subdivision_id');
+            const subs   = subdivisionMap[deptId] || [];
+            // keep current selection if dept hasn't changed
+            const current = selectedId ?? select.value;
+            select.innerHTML = '<option value="">— whole department —</option>';
+            subs.forEach(function (s) {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                if (String(s.id) === String(current)) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            // Subdivision: update dropdown when employee changes
+            const empSelect = document.getElementById('user_id');
+            empSelect.addEventListener('change', function () {
+                updateSubdivisions(employeeDeptMap[this.value] || null, null);
+            });
+            const initDept = employeeDeptMap[empSelect.value];
+            if (initDept) updateSubdivisions(initDept, {{ isset($penalty) ? ($penalty->subdivision_id ?? 'null') : 'null' }});
+
+            // Cash penalty: toggle charges field
             const typeSelect = document.getElementById('penalty_type');
             const chargesGroup = document.getElementById('charges_group');
             const chargesInput = document.getElementById('penalty_charges');

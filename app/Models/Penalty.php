@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
-    'user_id', 'department_id', 'penalty_date', 'mistake', 'penalty_type',
+    'user_id', 'department_id', 'subdivision_id', 'penalty_date', 'mistake', 'penalty_type',
     'penalty_level', 'penalty_charges', 'document_path', 'document_original_name',
     'reported_by', 'remarks', 'created_by', 'collection_status', 'collected_by', 'collected_at',
 ])]
@@ -33,6 +33,11 @@ class Penalty extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function subdivision(): BelongsTo
+    {
+        return $this->belongsTo(Subdivision::class);
     }
 
     public function createdBy(): BelongsTo
