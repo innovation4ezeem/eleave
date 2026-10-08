@@ -183,6 +183,19 @@ class UserController extends Controller
 
         // Sync subdivisions (admin only — HODs don't reassign teams)
         if (auth()->user()->isAdmin()) {
+            $newDeptId = $data['department_id'] ?? $user->department_id;
+
+            // If department changed, detach any dept-specific subdivisions from the OLD dept.
+            // Cross-dept subdivisions (department_id IS NULL) are kept regardless.
+            if (isset($data['department_id']) && $data['department_id'] != $user->getOriginal('department_id')) {
+                $oldDeptSubIds = $user->subdivisions()
+                    ->whereNotNull('department_id')
+                    ->where('department_id', '!=', $newDeptId)
+                    ->pluck('subdivisions.id')
+                    ->toArray();
+                $user->subdivisions()->detach($oldDeptSubIds);
+            }
+
             $user->subdivisions()->sync($subdivisionIds);
         }
 
