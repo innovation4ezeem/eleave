@@ -229,6 +229,16 @@
                         </div>
                     </a>
                 </div>
+                <div class="col-md-4">
+                    <a href="{{ route('admin.subdivisions.index') }}" class="text-decoration-none">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="h5">Subdivisions</h3>
+                                <p class="text-muted mb-0">Manage team subdivisions per department.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
             </div>
         </section>
     @endif
