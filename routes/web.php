@@ -65,6 +65,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{leaveApplication}/cancel', [LeaveApplicationController::class, 'cancel'])->name('cancel');
         Route::post('/{leaveApplication}/change-request', [LeaveApplicationController::class, 'requestChange'])->name('change-request');
         Route::get('/{leaveApplication}/document', [LeaveApplicationController::class, 'downloadDocument'])->name('document');
+        Route::get('/{leaveApplication}/document/preview', [LeaveApplicationController::class, 'previewDocument'])->name('document.preview');
     });
 
     Route::get('/balances', [LeaveBalanceController::class, 'index'])->name('balances.index');
@@ -97,6 +98,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{leaveApplication}/change/approve', [AdminLeaveApplicationController::class, 'approveChange'])->name('change.approve');
             Route::post('/{leaveApplication}/change/reject', [AdminLeaveApplicationController::class, 'rejectChange'])->name('change.reject');
             Route::get('/{leaveApplication}/document', [AdminLeaveApplicationController::class, 'downloadDocument'])->name('document');
+            Route::get('/{leaveApplication}/document/preview', [AdminLeaveApplicationController::class, 'previewDocument'])->name('document.preview');
         });
 
         // Users — admin-only create/store must come BEFORE the {user} wildcard routes

@@ -50,7 +50,24 @@
                         @if ($leaveApplication->hasDocument())
                             <dt class="col-sm-4">Document</dt>
                             <dd class="col-sm-8">
-                                <a href="{{ route('admin.applications.document', $leaveApplication) }}">{{ $leaveApplication->document_original_name }}</a>
+                                @if ($leaveApplication->isImageDocument())
+                                    <a href="{{ route('admin.applications.document.preview', $leaveApplication) }}" target="_blank" rel="noopener">
+                                        <img src="{{ route('admin.applications.document.preview', $leaveApplication) }}"
+                                             alt="{{ $leaveApplication->document_original_name }}"
+                                             class="img-fluid border rounded mb-2" style="max-height: 400px;">
+                                    </a>
+                                @elseif ($leaveApplication->isPdfDocument())
+                                    <iframe src="{{ route('admin.applications.document.preview', $leaveApplication) }}"
+                                            class="border rounded mb-2" style="width: 100%; height: 500px;"
+                                            title="{{ $leaveApplication->document_original_name }}"></iframe>
+                                @endif
+                                <div class="small">
+                                    <span class="text-muted">{{ $leaveApplication->document_original_name }}</span>
+                                    &middot;
+                                    <a href="{{ route('admin.applications.document.preview', $leaveApplication) }}" target="_blank" rel="noopener">Open in new tab</a>
+                                    &middot;
+                                    <a href="{{ route('admin.applications.document', $leaveApplication) }}">Download</a>
+                                </div>
                             </dd>
                         @endif
 

@@ -60,20 +60,26 @@ class LeaveApplicationController extends Controller
             ->get()
             ->keyBy('leave_type_id');
 
-        // Calculate pending days for each leave type (for display purposes)
-        $pendingDays = [];
-        foreach ($leaveTypes as $leaveType) {
-            $pending = LeaveApplication::where('user_id', $request->user()->id)
-                ->where('leave_type_id', $leaveType->id)
-                ->whereBetween('start_date', [
-                    LeaveYear::startDate($leaveYear),
-                    LeaveYear::endDate($leaveYear),
-                ])
-                ->whereIn('status', ['pending', 'approved'])
-                ->sum('total_days');
-
-            $pendingDays[$leaveType->id] = (float) $pending;
-        }
+        // Calculate pending days for each leave type (for display purposes).
+        // Only truly-pending applications: approved days are already reflected
+        // in the balance's used_days (and thus subtracted from remaining_days),
+        // so including 'approved' here would double-count them.
+        //
+        // Single grouped query (was one query per leave type — an N+1 that made
+        // this page noticeably slow). Keyed by leave_type_id; types with no
+        // pending leave are simply absent (the view falls back to 0).
+        $pendingDays = LeaveApplication::where('user_id', $request->user()->id)
+            ->whereIn('leave_type_id', $leaveTypes->pluck('id'))
+            ->whereBetween('start_date', [
+                LeaveYear::startDate($leaveYear),
+                LeaveYear::endDate($leaveYear),
+            ])
+            ->where('status', 'pending')
+            ->groupBy('leave_type_id')
+            ->selectRaw('leave_type_id, SUM(total_days) AS total')
+            ->pluck('total', 'leave_type_id')
+            ->map(fn ($v) => (float) $v)
+            ->all();
 
         return view('employee.leave.create', compact('leaveTypes', 'balances', 'pendingDays'));
     }
@@ -222,6 +228,22 @@ class LeaveApplicationController extends Controller
         return Storage::disk('local')->download(
             $leaveApplication->document_path,
             $leaveApplication->document_original_name,
+        );
+    }
+
+    /** Serve the document inline (Content-Disposition: inline) for in-page preview. */
+    public function previewDocument(LeaveApplication $leaveApplication): StreamedResponse
+    {
+        $this->authorize('viewDocument', $leaveApplication);
+
+        if (! $leaveApplication->hasDocument()) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response(
+            $leaveApplication->document_path,
+            $leaveApplication->document_original_name,
+            ['X-Content-Type-Options' => 'nosniff'],
         );
     }
 
