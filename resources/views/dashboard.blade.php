@@ -155,6 +155,24 @@
                     </div>
                 </a>
             </div>
+            <div class="col-md-4">
+                <a href="{{ route('warning-letters.index') }}" class="text-decoration-none">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3 class="h5">Warning Letters</h3>
+                            <p class="text-muted mb-0">
+                                @if (auth()->user()->isAdmin())
+                                    View and manage warning letters for all employees.
+                                @elseif (auth()->user()->isHod())
+                                    View your warning letters and those of your department.
+                                @else
+                                    View the warning letters issued to you.
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
         </div>
     </section>
 

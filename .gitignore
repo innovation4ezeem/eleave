@@ -25,3 +25,8 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# SQL dumps (may contain user data/hashes) - never commit
+*.sql
+!docs/deploy/*.sql
+eleave_rehearsal_dump.sql
