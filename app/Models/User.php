@@ -123,7 +123,9 @@ class User extends Authenticatable
         }
 
         if ($this->isHod()) {
-            return $this->department_id === $department->id;
+            // Cast both sides: a strict === silently fails when one id is an int
+            // and the other a string, which hid the Approve/Reject buttons for HODs.
+            return (int) $this->department_id === (int) $department->id;
         }
 
         return false;
