@@ -174,11 +174,16 @@
                                                         <label class="form-label mb-0 small">Reason / Remarks <span class="text-muted">(optional)</span></label>
                                                         <textarea name="remarks" rows="2" class="form-control form-control-sm" placeholder="Optional note recorded with your decision"></textarea>
                                                     </div>
-                                                    <button type="submit" class="btn btn-success btn-sm"
-                                                            formaction="{{ route('admin.applications.approve', $application) }}">Approve</button>
+                                                    @can('approve', $application)
+                                                        <button type="submit" class="btn btn-success btn-sm"
+                                                                formaction="{{ route('admin.applications.approve', $application) }}">Approve</button>
+                                                    @endcan
                                                     <button type="submit" class="btn btn-danger btn-sm"
                                                             formaction="{{ route('admin.applications.reject', $application) }}">Reject</button>
                                                 </form>
+                                                @cannot('approve', $application)
+                                                    <div class="small text-muted mt-1">Leave year {{ $application->leave_year }} is locked (archived) &mdash; unlock it on the Leave Years page to approve.</div>
+                                                @endcannot
                                             @endcan
                                         @elseif ($application->status === 'change_requested')
                                             <hr class="my-3">

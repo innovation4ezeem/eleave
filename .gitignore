@@ -29,4 +29,8 @@ Thumbs.db
 # SQL dumps (may contain user data/hashes) - never commit
 *.sql
 !docs/deploy/*.sql
+!docs/audit/*.sql
 eleave_rehearsal_dump.sql
+
+# CSV exports (e.g. phpMyAdmin DB exports with user data/hashes) - never commit
+*.csv

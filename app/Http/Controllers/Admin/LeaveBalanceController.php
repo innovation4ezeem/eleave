@@ -10,6 +10,7 @@ use App\Models\LeaveType;
 use App\Models\LeaveYearLock;
 use App\Models\User;
 use App\Services\LeaveBalanceService;
+use App\Services\LeaveEntitlementService;
 use App\Services\LeaveYearRolloverService;
 use App\Support\LeaveYear;
 use Illuminate\Http\RedirectResponse;
@@ -19,8 +20,10 @@ use Illuminate\View\View;
 
 class LeaveBalanceController extends Controller
 {
-    public function __construct(private LeaveBalanceService $leaveBalanceService)
-    {
+    public function __construct(
+        private LeaveBalanceService $leaveBalanceService,
+        private LeaveEntitlementService $entitlementService,
+    ) {
     }
 
     public function edit(Request $request, User $user, LeaveYearRolloverService $rollover): View
@@ -69,39 +72,63 @@ class LeaveBalanceController extends Controller
         }
 
         $leaveYear = (int) $request->input('leave_year', LeaveYear::current());
-        \Log::info("RECALCULATE: User {$user->name} (id={$user->id}), LeaveYear={$leaveYear}, by {auth()->user()->name}");
 
         if (LeaveYearLock::isLocked($leaveYear)) {
             return redirect()->back()->with('error', 'This leave year is locked (archived) and cannot be recalculated.');
         }
 
-        try {
-            DB::transaction(function () use ($user, $leaveYear) {
-                $oldBalances = LeaveBalance::where('user_id', $user->id)->where('leave_year', $leaveYear)->get();
+        // Recalculate ONLY refreshes entitlement_days from the current entitlement
+        // tiers (e.g. after a probation -> permanent change or a tier edit).
+        // It never deletes balances and never touches used_days or
+        // adjustment_days, so approved leave and manual adjustments are kept.
+        // Leave types without tiers (Carry Forward, Replacement, Reward, ...)
+        // are granted manually or by the rollover, so they are left alone.
+        $changes = [];
 
-                foreach ($oldBalances as $balance) {
+        try {
+            DB::transaction(function () use ($user, $leaveYear, &$changes) {
+                $leaveTypes = $user->entitledLeaveTypes()->active()->with('entitlementTiers')->get();
+
+                foreach ($leaveTypes as $leaveType) {
+                    $balance = $this->leaveBalanceService->getOrCreateBalance($user, $leaveType, $leaveYear);
+
+                    if ($balance->wasRecentlyCreated || $leaveType->entitlementTiers->isEmpty()) {
+                        continue;
+                    }
+
+                    $oldValue = (float) $balance->entitlement_days;
+                    $newValue = $this->entitlementService->entitlementFor($user, $leaveType, $leaveYear);
+
+                    if ($oldValue === $newValue) {
+                        continue;
+                    }
+
                     LeaveBalanceAdjustment::create([
                         'leave_balance_id' => $balance->id,
                         'changed_by' => auth()->id(),
-                        'field_changed' => 'reset',
-                        'old_value' => $balance->entitlement_days,
-                        'new_value' => 0,
-                        'reason' => 'Reset via Recalculate',
+                        'field_changed' => 'entitlement_days',
+                        'old_value' => $oldValue,
+                        'new_value' => $newValue,
+                        'reason' => 'Recalculated from entitlement tiers',
                     ]);
-                }
 
-                LeaveBalance::where('user_id', $user->id)->where('leave_year', $leaveYear)->delete();
+                    $balance->update(['entitlement_days' => $newValue]);
 
-                foreach ($user->entitledLeaveTypes()->active()->get() as $leaveType) {
-                    $this->leaveBalanceService->getOrCreateBalance($user, $leaveType, $leaveYear);
+                    $changes[] = "{$leaveType->name}: ".number_format($oldValue, 1).' → '.number_format($newValue, 1);
                 }
             });
+        } catch (\Throwable $e) {
+            report($e);
 
-            return redirect()->route('admin.users.balances.edit', ['user' => $user, 'leave_year' => $leaveYear])
-                ->with('success', 'Leave balances recalculated successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Error recalculating balances: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error recalculating balances: '.$e->getMessage());
         }
+
+        $message = $changes === []
+            ? 'Entitlements already match the current tiers. Nothing changed.'
+            : 'Entitlements recalculated ('.implode('; ', $changes).'). Used days and adjustments were kept.';
+
+        return redirect()->route('admin.users.balances.edit', ['user' => $user, 'leave_year' => $leaveYear])
+            ->with('success', $message);
     }
 
     public function update(UpdateLeaveBalanceRequest $request, User $user): RedirectResponse

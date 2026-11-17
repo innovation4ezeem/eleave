@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\LeaveBalance;
 use App\Models\LeaveType;
 use App\Models\User;
-use App\Services\LeaveBalanceService;
 use App\Services\LeaveYearRolloverService;
 use Database\Seeders\LeaveTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,12 +22,12 @@ class LeaveYearRolloverServiceTest extends TestCase
 
         $this->seed(LeaveTypeSeeder::class);
 
-        $this->service = new LeaveYearRolloverService(new LeaveBalanceService());
+        $this->service = app(LeaveYearRolloverService::class);
     }
 
     public function test_carry_forward_is_capped_at_five_days(): void
     {
-        $user = User::factory()->create(['is_active' => true]);
+        $user = User::factory()->create(['employee_status' => 'permanent']);
         $annualLeaveType = LeaveType::where('code', 'annual')->firstOrFail();
 
         LeaveBalance::create([
@@ -56,7 +55,7 @@ class LeaveYearRolloverServiceTest extends TestCase
 
     public function test_carry_forward_uses_remaining_days_when_below_cap(): void
     {
-        $user = User::factory()->create(['is_active' => true]);
+        $user = User::factory()->create(['employee_status' => 'permanent']);
         $annualLeaveType = LeaveType::where('code', 'annual')->firstOrFail();
 
         LeaveBalance::create([
@@ -75,7 +74,7 @@ class LeaveYearRolloverServiceTest extends TestCase
 
     public function test_carry_forward_is_zero_when_no_previous_balance_exists(): void
     {
-        $user = User::factory()->create(['is_active' => true]);
+        $user = User::factory()->create(['employee_status' => 'permanent']);
 
         $carryForwardDays = $this->service->rolloverUser($user, 2026);
 
@@ -84,7 +83,7 @@ class LeaveYearRolloverServiceTest extends TestCase
 
     public function test_carry_forward_is_zero_when_previous_balance_is_negative(): void
     {
-        $user = User::factory()->create(['is_active' => true]);
+        $user = User::factory()->create(['employee_status' => 'permanent']);
         $annualLeaveType = LeaveType::where('code', 'annual')->firstOrFail();
 
         LeaveBalance::create([

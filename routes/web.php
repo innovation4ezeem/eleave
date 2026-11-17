@@ -137,6 +137,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/leave-years', [LeaveYearController::class, 'index'])->name('leave-years.index');
             Route::post('/leave-years/{leaveYear}/lock', [LeaveYearController::class, 'lock'])->name('leave-years.lock');
             Route::post('/leave-years/{leaveYear}/unlock', [LeaveYearController::class, 'unlock'])->name('leave-years.unlock');
+            Route::get('/leave-years/{leaveYear}/rollover', [LeaveYearController::class, 'rolloverPreview'])->name('leave-years.rollover.preview');
+            Route::post('/leave-years/{leaveYear}/rollover', [LeaveYearController::class, 'rollover'])->name('leave-years.rollover');
 
             // Personal Competence — category management + voting log
             Route::get('/competence-categories', [CompetenceCategoryController::class, 'index'])->name('competence-categories.index');

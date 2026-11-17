@@ -99,7 +99,7 @@
                             <form method="POST" action="{{ route('admin.users.balances.recalculate', $user) }}">
                                 @csrf
                                 <input type="hidden" name="leave_year" value="{{ $leaveYear }}">
-                                <button type="submit" class="btn btn-warning" onclick="return confirm('This will delete all current balances and recalculate based on current tiers. Continue?');">Recalculate</button>
+                                <button type="submit" class="btn btn-warning" onclick="return confirm('Reset entitlement days to the current tier values for this year? Leave types without tiers (Carry Forward, Replacement, Reward) are not changed. Used days and adjustments are kept. Every change is logged. Continue?');">Recalculate Entitlements</button>
                             </form>
                         @endunless
                     </div>

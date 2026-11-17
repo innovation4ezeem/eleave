@@ -15,6 +15,15 @@
         available so admins can still backfill or correct archived years.
     </p>
 
+    <p class="text-muted">
+        <strong>Year-end rollover</strong> runs automatically at 00:05 on 1 January: it sets each employee's
+        Carry Forward Leave (unused Annual + Reward, capped at 5 days), creates the new year's balances and
+        locks the year that ended. Between 1 January and the end of February you can also run it by hand from
+        the current year's row &mdash; for example if the automatic run did not happen, or to update Carry
+        Forward after approving late leave in the old year (unlock it, approve, then re-run). You get a
+        preview before anything changes.
+    </p>
+
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
@@ -45,6 +54,11 @@
                                 @endif
                             </td>
                             <td class="text-end">
+                                @if ($year === $current && $rolloverAvailable)
+                                    <a href="{{ route('admin.leave-years.rollover.preview', $year) }}" class="btn btn-sm btn-warning me-1">
+                                        {{ $lockedYears->has($year - 1) ? 'Re-run' : 'Run' }} year-end rollover
+                                    </a>
+                                @endif
                                 @if ($isLocked)
                                     <form method="POST" action="{{ route('admin.leave-years.unlock', $year) }}" class="d-inline" onsubmit="return confirm('Unlock this leave year? Its records become editable again.');">
                                         @csrf

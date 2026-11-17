@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\LeaveYearLock;
 use App\Models\User;
 use App\Services\LeaveYearRolloverService;
 use Illuminate\Console\Attributes\Description;
@@ -28,7 +27,9 @@ class LeaveRolloverCommand extends Command
 
         $this->info("Rolling over unused Annual Leave from {$previousLeaveYear} into Carry Forward Leave for {$leaveYear}...");
 
-        $results = $this->rolloverService->rolloverAll($leaveYear);
+        // Sets Carry Forward, provisions new-year balances and locks (archives)
+        // the leave year that just ended — same code path as the admin button.
+        $results = $this->rolloverService->run($leaveYear);
 
         foreach ($results as $userId => $days) {
             $user = User::find($userId);
@@ -36,13 +37,6 @@ class LeaveRolloverCommand extends Command
         }
 
         $this->info(count($results).' user(s) processed.');
-
-        // Archive the leave year that just ended: lock it read-only.
-        LeaveYearLock::updateOrCreate(
-            ['leave_year' => $previousLeaveYear],
-            ['locked_at' => now(), 'locked_by' => null],
-        );
-
         $this->info("Leave year {$previousLeaveYear} locked (archived).");
 
         return self::SUCCESS;

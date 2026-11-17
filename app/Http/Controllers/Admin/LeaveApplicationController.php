@@ -94,7 +94,7 @@ class LeaveApplicationController extends Controller
 
     public function approve(ApproveRejectRequest $request, LeaveApplication $leaveApplication, LeaveApplicationApprovalService $service): RedirectResponse
     {
-        $this->authorize('decide', $leaveApplication);
+        $this->authorize('approve', $leaveApplication);
 
         $service->approve($leaveApplication, $request->user(), $request->validated('remarks'));
 
@@ -112,7 +112,7 @@ class LeaveApplicationController extends Controller
 
     public function approveChange(LeaveApplication $leaveApplication, LeaveApplicationApprovalService $service): RedirectResponse
     {
-        $this->authorize('decideChange', $leaveApplication);
+        $this->authorize('approveChange', $leaveApplication);
 
         $service->approveChange($leaveApplication, auth()->user());
 

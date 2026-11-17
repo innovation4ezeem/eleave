@@ -147,6 +147,13 @@
 
                         <div class="row g-3">
                             <div class="col-md-6">
+                                @cannot('approveChange', $leaveApplication)
+                                    <div class="alert alert-warning small mb-0">
+                                        This change touches a <strong>locked (archived) leave year</strong>, so it cannot be approved here.
+                                        An admin can unlock the year on the <a href="{{ route('admin.leave-years.index') }}">Leave Years</a> page,
+                                        approve it, then re-run the year-end rollover so Carry Forward is updated. Rejecting is still allowed.
+                                    </div>
+                                @else
                                 <form method="POST" action="{{ route('admin.applications.change.approve', $leaveApplication) }}"
                                       onsubmit="return confirm('{{ $isCancelRequest ? 'Approve this cancellation? The leave will be cancelled and any deducted balance restored.' : 'Approve this change? The new leave details will be applied directly and the balance adjusted automatically.' }}');">
                                     @csrf
@@ -159,6 +166,7 @@
                                     </p>
                                     <button type="submit" class="btn btn-success">{{ $isCancelRequest ? 'Approve Cancellation' : 'Approve Change' }}</button>
                                 </form>
+                                @endcannot
                             </div>
                             <div class="col-md-6">
                                 <form method="POST" action="{{ route('admin.applications.change.reject', $leaveApplication) }}">
@@ -181,14 +189,22 @@
                         <div class="card h-100">
                             <div class="card-body">
                                 <h2 class="h6">Approve</h2>
-                                <form method="POST" action="{{ route('admin.applications.approve', $leaveApplication) }}">
-                                    @csrf
-                                    <div class="mb-2">
-                                        <label for="approve_remarks" class="form-label">Remarks (optional)</label>
-                                        <textarea id="approve_remarks" name="remarks" rows="2" class="form-control"></textarea>
+                                @can('approve', $leaveApplication)
+                                    <form method="POST" action="{{ route('admin.applications.approve', $leaveApplication) }}">
+                                        @csrf
+                                        <div class="mb-2">
+                                            <label for="approve_remarks" class="form-label">Remarks (optional)</label>
+                                            <textarea id="approve_remarks" name="remarks" rows="2" class="form-control"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-success">Approve</button>
+                                    </form>
+                                @else
+                                    <div class="alert alert-warning small mb-0">
+                                        Leave year {{ $leaveApplication->leave_year }} is <strong>locked (archived)</strong>, so this application cannot be approved here.
+                                        An admin can unlock the year on the <a href="{{ route('admin.leave-years.index') }}">Leave Years</a> page,
+                                        approve it, then re-run the year-end rollover so Carry Forward is updated. Rejecting is still allowed.
                                     </div>
-                                    <button type="submit" class="btn btn-success">Approve</button>
-                                </form>
+                                @endcan
                             </div>
                         </div>
                     </div>
